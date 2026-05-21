@@ -28,7 +28,7 @@ import {
   WeeklyUpdate
 } from './types';
 import { buildMilestoneTemplates, loadStoredData, resetStoredData, saveStoredData } from './services/demoStore';
-import { isSupabaseConfigured } from './services/supabaseClient';
+import { isPreviewModeAvailable, isSupabaseConfigured } from './services/supabaseClient';
 import {
   createStudentWithDefaults,
   getOrCreateProfile,
@@ -179,7 +179,11 @@ function LoginScreen({
           <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 flex gap-3">
             <AlertTriangle className="h-5 w-5 shrink-0" />
             <p>
-              {isSupabaseConfigured ? 'Use your ProgressPilot account, or switch to preview mode for local sample data.' : 'Preview mode is active. Add connection env vars to enable live accounts and database storage.'}
+              {isSupabaseConfigured
+                ? isPreviewModeAvailable
+                  ? 'Use your ProgressPilot account, or switch to preview mode for local sample data.'
+                  : 'Use your ProgressPilot account to access the live workspace.'
+                : 'Preview mode is active. Add connection env vars to enable live accounts and database storage.'}
             </p>
           </div>
 
@@ -193,13 +197,17 @@ function LoginScreen({
               >
                 Sign In
               </button>
-              <button
-                type="button"
-                onClick={() => setAuthMode('preview')}
-                className={`rounded-xl py-2 text-xs font-black ${authMode === 'preview' ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-500'}`}
-              >
-                Preview Mode
-              </button>
+              {isPreviewModeAvailable ? (
+                <button
+                  type="button"
+                  onClick={() => setAuthMode('preview')}
+                  className={`rounded-xl py-2 text-xs font-black ${authMode === 'preview' ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-500'}`}
+                >
+                  Preview Mode
+                </button>
+              ) : (
+                <span className="rounded-xl py-2 text-center text-xs font-black text-slate-400">Live Workspace</span>
+              )}
             </div>
 
             {authMode === 'preview' ? (
@@ -300,9 +308,9 @@ function LoginScreen({
           )}
 
           <div className="mt-6 text-xs text-slate-500 space-y-2">
-            <p className="font-bold text-slate-700">Production status</p>
+            <p className="font-bold text-slate-700">Workspace status</p>
             <p>Live database configured: <span className={isSupabaseConfigured ? 'text-emerald-600 font-bold' : 'text-amber-600 font-bold'}>{isSupabaseConfigured ? 'Yes' : 'No'}</span></p>
-            <p>Database schema: supabase/migrations/001_initial_schema.sql and 002_auth_profile_policies.sql</p>
+            {isPreviewModeAvailable && <p>Preview accounts are available for local review.</p>}
           </div>
         </section>
       </main>
@@ -642,8 +650,8 @@ export default function App() {
               {currentUser.role === 'Lecturer' ? <Shield className="w-4 h-4 text-blue-300" /> : <User className="w-4 h-4 text-blue-300" />}
               {currentUser.name} ({currentUser.role})
             </span>
-            <span className={`rounded-xl px-3 py-2 text-xs font-bold border ${isSupabaseConfigured ? 'bg-emerald-950 text-emerald-200 border-emerald-800' : 'bg-amber-950 text-amber-200 border-amber-800'}`}>
-              {isProductionData ? 'Supabase data' : 'Local preview mode'}
+            <span className={`rounded-xl px-3 py-2 text-xs font-bold border ${isProductionData ? 'bg-emerald-950 text-emerald-200 border-emerald-800' : 'bg-amber-950 text-amber-200 border-amber-800'}`}>
+              {isProductionData ? 'Live data' : 'Preview data'}
             </span>
             {isLoadingData && <span className="text-xs font-bold text-blue-200">Syncing...</span>}
             <button
