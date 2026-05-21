@@ -8,7 +8,7 @@ import {
   CheckCircle, Plus, Calendar, CheckSquare, Upload, ArrowRight, Save, 
   Paperclip, PlusCircle, History, MessageSquare, ExternalLink, ListChecks,
   User, BookOpen, Clock, AlertTriangle, FileText, ChevronRight, Settings,
-  MapPin, Bell, Search, Star, Award, Sparkles, Check, Send, Download
+  MapPin, Bell, Search, Star, Award, Sparkles, Check, Send, Download, ChevronLeft
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { 
@@ -78,6 +78,8 @@ export default function StudentDashboard({
   const [newTaskPriority, setNewTaskPriority] = useState<'High' | 'Medium' | 'Low'>('Medium');
   const [newTaskDeadline, setNewTaskDeadline] = useState('2025-05-27');
   const [newTaskArea, setNewTaskArea] = useState('Chapter 3');
+  const today = useMemo(() => new Date(), []);
+  const [visibleCalendarMonth, setVisibleCalendarMonth] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1));
 
   // Submit publication form state
   const [showPubForm, setShowPubForm] = useState(false);
@@ -187,12 +189,26 @@ export default function StudentDashboard({
     return events.sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time));
   }, [currentStudent.id, meetingLogs, myMeetingLogs, myMilestones, myTasks, myUpdates]);
 
-  const mayCalendarEvents = useMemo(() => {
+  const formatLocalDate = (date: Date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const studentVisibleCalendarEvents = useMemo(() => {
     return studentCalendarEvents.filter(event => {
       const date = new Date(event.date);
-      return date.getFullYear() === 2025 && date.getMonth() === 4;
+      return date.getFullYear() === visibleCalendarMonth.getFullYear() && date.getMonth() === visibleCalendarMonth.getMonth();
     });
-  }, [studentCalendarEvents]);
+  }, [studentCalendarEvents, visibleCalendarMonth]);
+
+  const studentCalendarMonthLabel = visibleCalendarMonth.toLocaleDateString('en-MY', { month: 'long', year: 'numeric' });
+  const studentDaysInMonth = new Date(visibleCalendarMonth.getFullYear(), visibleCalendarMonth.getMonth() + 1, 0).getDate();
+  const studentFirstDayOffset = new Date(visibleCalendarMonth.getFullYear(), visibleCalendarMonth.getMonth(), 1).getDay();
+  const changeStudentCalendarMonth = (offset: number) => {
+    setVisibleCalendarMonth(previous => new Date(previous.getFullYear(), previous.getMonth() + offset, 1));
+  };
 
   // Set default form values dynamically
   React.useEffect(() => {
@@ -1398,7 +1414,7 @@ export default function StudentDashboard({
                     </div>
 
                     <div className="flex justify-between items-center text-[10px] pt-2 border-t border-slate-200/40 font-mono">
-                      <span className="text-slate-400">May 2025</span>
+                      <span className="text-slate-400">{new Date(file.createdAt).toLocaleDateString('en-MY', { month: 'short', year: 'numeric' })}</span>
                       <button 
                         onClick={() => alert(`Beginning simulative secure download of manuscript "${file.fileName}"...`)}
                         className="text-indigo-600 font-bold hover:underline"
@@ -1429,13 +1445,13 @@ export default function StudentDashboard({
                 </div>
 
                 <div className="flex items-center justify-between mb-4">
-                  <button className="p-2 rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50">
-                    <ChevronRight className="w-4 h-4 rotate-180" />
+                  <button onClick={() => changeStudentCalendarMonth(-1)} className="p-2 rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50">
+                    <ChevronLeft className="w-4 h-4" />
                   </button>
                   <div className="px-4 py-2 rounded-2xl bg-slate-50 border border-slate-200 text-sm font-black text-slate-900">
-                    May 2025
+                    {studentCalendarMonthLabel}
                   </div>
-                  <button className="p-2 rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50">
+                  <button onClick={() => changeStudentCalendarMonth(1)} className="p-2 rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50">
                     <ChevronRight className="w-4 h-4" />
                   </button>
                 </div>
@@ -1445,13 +1461,14 @@ export default function StudentDashboard({
                 </div>
 
                 <div className="grid grid-cols-7 gap-2 mt-2">
-                  {[27, 28, 29, 30].map(day => (
-                    <div key={`prev-${day}`} className="min-h-24 rounded-2xl bg-slate-50/50 text-slate-300 p-2 text-xs">{day}</div>
+                  {Array.from({ length: studentFirstDayOffset }, (_, index) => (
+                    <div key={`prev-${index}`} className="min-h-24 rounded-2xl bg-slate-50/50 text-slate-300 p-2 text-xs" />
                   ))}
-                  {Array.from({ length: 31 }, (_, index) => {
+                  {Array.from({ length: studentDaysInMonth }, (_, index) => {
                     const day = index + 1;
-                    const eventsForDay = mayCalendarEvents.filter(event => new Date(event.date).getDate() === day);
-                    const isToday = day === 20;
+                    const dayKey = formatLocalDate(new Date(visibleCalendarMonth.getFullYear(), visibleCalendarMonth.getMonth(), day));
+                    const eventsForDay = studentVisibleCalendarEvents.filter(event => event.date === dayKey);
+                    const isToday = dayKey === formatLocalDate(today);
                     return (
                       <div key={day} className={`min-h-24 rounded-2xl border p-2 text-xs ${isToday ? 'border-indigo-300 bg-indigo-50/40' : 'border-slate-100 bg-white'}`}>
                         <div className={`font-mono font-bold mb-1 ${isToday ? 'text-indigo-700' : 'text-slate-500'}`}>{day}</div>

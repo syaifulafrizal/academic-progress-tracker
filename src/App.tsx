@@ -518,6 +518,15 @@ export default function App() {
     patchData(previous => ({ ...previous, meetingLogs: [log, ...previous.meetingLogs] }));
   };
 
+  const handleScheduleMeeting = (studentId: string, newLog: Omit<MeetingLog, 'id' | 'studentId'>) => {
+    if (isProductionData) {
+      insertMeetingLog(studentId, newLog).then(() => refreshRemoteData()).catch(error => alert(error.message));
+      return;
+    }
+    const log: MeetingLog = { ...newLog, id: makeId('ml'), studentId };
+    patchData(previous => ({ ...previous, meetingLogs: [log, ...previous.meetingLogs] }));
+  };
+
   const handleAddTaskForStudentProfile = (title: string, priority: 'High' | 'Medium' | 'Low', relatedArea: string) => {
     if (!selectedStudentProfileId) return;
     const student = data.students.find(item => item.id === selectedStudentProfileId);
@@ -723,6 +732,7 @@ export default function App() {
               onApproveTask={handleApproveTask}
               onApproveWeeklyUpdate={handleAddFeedbackToUpdate}
               onApproveMilestone={handleApproveMilestone}
+              onScheduleMeeting={handleScheduleMeeting}
               onGenerateReport={handleGenerateReport}
               thesisChapters={data.thesisChapters}
               reports={data.reports}

@@ -9,7 +9,7 @@ import {
   TrendingUp, CheckSquare, FileText, Search, Filter, 
   ChevronRight, Download, Send, Check, CheckCircle2, 
   XCircle, MessageSquare, PlusCircle, Sparkles, BookOpen,
-  ArrowRight, File, ArrowUpRight, AlertCircle, RefreshCw, Bell, Award, Settings
+  ArrowRight, File, ArrowUpRight, AlertCircle, RefreshCw, Bell, Award, Settings, ChevronLeft
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { 
@@ -36,7 +36,7 @@ interface LecturerDashboardProps {
   onApproveTask: (taskId: string) => void;
   onApproveWeeklyUpdate: (updateId: string, feedback: string) => void;
   onApproveMilestone: (milestoneId: string, newStatus: TaskStatus) => void;
-  onAddMeetingLog?: (log: Omit<MeetingLog, 'id'>) => void; // Support adding meeting log records
+  onScheduleMeeting?: (studentId: string, log: Omit<MeetingLog, 'id' | 'studentId'>) => void;
   thesisChapters?: ThesisChapter[];
   reports?: ReportRecord[];
   onGenerateReport?: (type: ReportRecord['type']) => void;
@@ -56,7 +56,7 @@ export default function LecturerDashboard({
   onApproveTask,
   onApproveWeeklyUpdate,
   onApproveMilestone,
-  onAddMeetingLog,
+  onScheduleMeeting,
   thesisChapters = [],
   reports = [],
   onGenerateReport
@@ -69,8 +69,15 @@ export default function LecturerDashboard({
   const [typeFilter, setTypeFilter] = useState<'ALL' | 'FYP' | 'Master' | 'PhD'>('ALL');
   const [riskFilter, setRiskFilter] = useState<'ALL' | StudentRisk>('ALL');
   const [activePriorityTab, setActivePriorityTab] = useState<'attention' | 'fast_completion'>('attention');
-  const [calendarMonth, setCalendarMonth] = useState('May 2025');
-  const [selectedCalendarDay, setSelectedCalendarDay] = useState<number | null>(20); // Current date is May 20
+  const today = useMemo(() => new Date(), []);
+  const [visibleCalendarMonth, setVisibleCalendarMonth] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1));
+  const [selectedCalendarDay, setSelectedCalendarDay] = useState<number | null>(today.getDate());
+  const [meetingStudentId, setMeetingStudentId] = useState('');
+  const [meetingDate, setMeetingDate] = useState(() => today.toISOString().slice(0, 10));
+  const [meetingTime, setMeetingTime] = useState('10:00');
+  const [meetingSummary, setMeetingSummary] = useState('Progress review meeting');
+  const [meetingFeedback, setMeetingFeedback] = useState('Scheduled supervision discussion.');
+  const [meetingActions, setMeetingActions] = useState('Prepare progress update before the meeting.');
 
   // State for Review Updates Draft feedback modal / inline
   const [reviewingUpdateId, setReviewingUpdateId] = useState<string | null>(null);
@@ -126,16 +133,64 @@ export default function LecturerDashboard({
       .sort((a, b) => b.computedProgress - a.computedProgress);
   }, [enrichedStudents]);
 
+  const formatLocalDate = (date: Date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const selectedDate = selectedCalendarDay
+    ? new Date(visibleCalendarMonth.getFullYear(), visibleCalendarMonth.getMonth(), selectedCalendarDay)
+    : null;
+  const selectedDateKey = selectedDate ? formatLocalDate(selectedDate) : '';
+  const calendarMonthLabel = visibleCalendarMonth.toLocaleDateString('en-MY', { month: 'long', year: 'numeric' });
+  const daysInMonth = new Date(visibleCalendarMonth.getFullYear(), visibleCalendarMonth.getMonth() + 1, 0).getDate();
+  const firstDayOffset = new Date(visibleCalendarMonth.getFullYear(), visibleCalendarMonth.getMonth(), 1).getDay();
+
+  const changeCalendarMonth = (offset: number) => {
+    setVisibleCalendarMonth(previous => {
+      const next = new Date(previous.getFullYear(), previous.getMonth() + offset, 1);
+      const nextDays = new Date(next.getFullYear(), next.getMonth() + 1, 0).getDate();
+      setSelectedCalendarDay(day => day ? Math.min(day, nextDays) : 1);
+      return next;
+    });
+  };
+
+  const handleScheduleMeetingSubmit = (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!onScheduleMeeting || !meetingStudentId) return;
+    const actions = meetingActions
+      .split('\n')
+      .map(item => item.trim())
+      .filter(Boolean);
+    const nextMeeting = new Date(`${meetingDate}T${meetingTime || '10:00'}`);
+    nextMeeting.setDate(nextMeeting.getDate() + 7);
+    onScheduleMeeting(meetingStudentId, {
+      meetingDate,
+      summary: meetingSummary,
+      supervisorFeedback: `${meetingFeedback} Time: ${meetingTime || '10:00'}.`,
+      actionItems: actions.length ? actions : ['Prepare progress update before the next meeting.'],
+      deadline: formatLocalDate(nextMeeting),
+      nextMeetingDate: formatLocalDate(nextMeeting)
+    });
+    setMeetingStudentId('');
+    setMeetingSummary('Progress review meeting');
+    setMeetingFeedback('Scheduled supervision discussion.');
+    setMeetingActions('Prepare progress update before the meeting.');
+    alert('Meeting scheduled and added to the progress calendar.');
+  };
+
   // Calendar dates mapped
   const calendarEvents = useMemo(() => {
-    const events: { day: number; label: string; type: 'milestone' | 'meeting' | 'task' | 'publication'; student: string; status?: string }[] = [];
+    const events: { date: string; day: number; label: string; type: 'milestone' | 'meeting' | 'task' | 'publication'; student: string; status?: string; time?: string }[] = [];
     
     milestones.forEach(m => {
       const date = new Date(m.deadline);
-      // Align to may 2025 (month 4 in js 0-indexed)
-      if (date.getFullYear() === 2025 && date.getMonth() === 4) {
+      if (date.getFullYear() === visibleCalendarMonth.getFullYear() && date.getMonth() === visibleCalendarMonth.getMonth()) {
         const student = students.find(s => s.id === m.studentId);
         events.push({
+          date: m.deadline,
           day: date.getDate(),
           label: `${m.title}`,
           type: 'milestone',
@@ -147,21 +202,25 @@ export default function LecturerDashboard({
 
     meetingLogs.forEach(ml => {
       const date = new Date(ml.meetingDate);
-      if (date.getFullYear() === 2025 && date.getMonth() === 4) {
+      if (date.getFullYear() === visibleCalendarMonth.getFullYear() && date.getMonth() === visibleCalendarMonth.getMonth()) {
         const student = students.find(s => s.id === ml.studentId);
+        const timeMatch = ml.supervisorFeedback.match(/Time:\s*([0-9:apm\s.]+)/i);
         events.push({
+          date: ml.meetingDate,
           day: date.getDate(),
           label: `Supervision Meeting: ${ml.summary.substring(0, 30)}...`,
           type: 'meeting',
-          student: student?.name || 'Student'
+          student: student?.name || 'Student',
+          time: timeMatch?.[1]?.trim()
         });
       }
     });
 
     tasks.forEach(t => {
       const date = new Date(t.deadline);
-      if (date.getFullYear() === 2025 && date.getMonth() === 4) {
+      if (date.getFullYear() === visibleCalendarMonth.getFullYear() && date.getMonth() === visibleCalendarMonth.getMonth()) {
         events.push({
+          date: t.deadline,
           day: date.getDate(),
           label: `${t.title}`,
           type: 'task',
@@ -172,12 +231,12 @@ export default function LecturerDashboard({
     });
 
     return events;
-  }, [milestones, meetingLogs, tasks, students]);
+  }, [milestones, meetingLogs, tasks, students, visibleCalendarMonth]);
 
   const selectedDayEvents = useMemo(() => {
-    if (selectedCalendarDay === null) return [];
-    return calendarEvents.filter(e => e.day === selectedCalendarDay);
-  }, [calendarEvents, selectedCalendarDay]);
+    if (!selectedDateKey) return [];
+    return calendarEvents.filter(e => e.date === selectedDateKey);
+  }, [calendarEvents, selectedDateKey]);
 
   // Dashboard calculations representing stats
   const totalCount = students.length;
@@ -419,13 +478,21 @@ export default function LecturerDashboard({
                       <Calendar className="w-5 h-5 text-indigo-600" />
                       <h3 className="text-lg font-bold text-slate-900 font-sans">Academic Deadlines Calendar</h3>
                     </div>
-                    <span className="text-xs font-mono font-bold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-lg">
-                      {calendarMonth}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => changeCalendarMonth(-1)} className="p-1.5 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50">
+                        <ChevronLeft className="w-4 h-4" />
+                      </button>
+                      <span className="text-xs font-mono font-bold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-lg">
+                        {calendarMonthLabel}
+                      </span>
+                      <button onClick={() => changeCalendarMonth(1)} className="p-1.5 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50">
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
 
                   <p className="text-xs text-slate-400 mb-4 font-mono leading-none">
-                    Review meetings, deliverables chapter deadlines set within May.
+                    Review meetings, deliverables, tasks, and chapter deadlines for the selected month.
                   </p>
 
                   <div className="grid grid-cols-7 gap-2 text-center text-[10px] font-bold font-mono tracking-widest text-[#415a77] uppercase border-b border-slate-100 pb-2">
@@ -433,12 +500,13 @@ export default function LecturerDashboard({
                   </div>
 
                   <div className="grid grid-cols-7 gap-2 mt-2">
-                    {/* Padding blank blocks for calendar alignment */}
-                    <div></div><div></div><div></div><div></div>
+                    {Array.from({ length: firstDayOffset }, (_, index) => (
+                      <div key={`blank-${index}`} />
+                    ))}
                     
-                    {Array.from({ length: 31 }, (_, i) => {
+                    {Array.from({ length: daysInMonth }, (_, i) => {
                       const day = i + 1;
-                      const isToday = day === 20;
+                      const isToday = day === today.getDate() && visibleCalendarMonth.getMonth() === today.getMonth() && visibleCalendarMonth.getFullYear() === today.getFullYear();
                       const dayEvents = calendarEvents.filter(e => e.day === day);
                       const hasEvents = dayEvents.length > 0;
                       const isSelected = selectedCalendarDay === day;
@@ -474,8 +542,8 @@ export default function LecturerDashboard({
                   {/* Day schedule drawer */}
                   <div className="mt-5 p-4 bg-slate-50 rounded-2xl border border-slate-150">
                     <h4 className="text-[10px] font-mono font-bold text-slate-450 uppercase flex justify-between">
-                      <span>Schedule for May {selectedCalendarDay}, 2025</span>
-                      {selectedCalendarDay === 20 && (
+                      <span>Schedule for {selectedDate?.toLocaleDateString('en-MY', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+                      {selectedDateKey === formatLocalDate(today) && (
                         <span className="text-logo text-xs font-bold text-indigo-600 bg-indigo-50 px-1.5 py-0.2 rounded">ACTUAL DATE</span>
                       )}
                     </h4>
@@ -488,7 +556,7 @@ export default function LecturerDashboard({
                           <div key={eIdx} className="p-2.5 bg-white border border-slate-200 rounded-xl text-xs flex justify-between items-center">
                             <div>
                               <strong className="text-slate-800 font-sans block">{evt.label}</strong>
-                              <span className="text-[10px] font-mono text-slate-400">Assigned: <strong className="text-indigo-600">{evt.student}</strong></span>
+                              <span className="text-[10px] font-mono text-slate-400">Assigned: <strong className="text-indigo-600">{evt.student}</strong>{evt.time ? ` • ${evt.time}` : ''}</span>
                             </div>
                             <span className="text-[9px] bg-indigo-55 text-indigo-50 px-1.5 py-0.2 uppercase font-bold text-indigo-600 font-mono">{evt.type}</span>
                           </div>
@@ -1046,9 +1114,85 @@ export default function LecturerDashboard({
               <div className="flex justify-between items-center pb-4 border-b border-slate-100">
                 <div>
                   <h3 className="text-xl font-bold text-slate-900 font-sans">Progress Meeting Logs</h3>
-                  <p className="text-xs text-slate-500 font-sans mt-0.5">Review meeting notes, action items, and supervisor feedback.</p>
+                  <p className="text-xs text-slate-500 font-sans mt-0.5">Schedule meetings, review notes, action items, and supervisor feedback.</p>
                 </div>
               </div>
+
+              <form onSubmit={handleScheduleMeetingSubmit} className="grid grid-cols-1 lg:grid-cols-12 gap-3 rounded-3xl border border-indigo-100 bg-indigo-50/40 p-4">
+                <div className="lg:col-span-3">
+                  <label className="text-[10px] font-mono font-bold uppercase text-indigo-700">Student</label>
+                  <select
+                    value={meetingStudentId}
+                    onChange={event => setMeetingStudentId(event.target.value)}
+                    required
+                    className="mt-1 w-full rounded-xl border border-indigo-100 bg-white px-3 py-2 text-xs font-semibold text-slate-800 outline-none"
+                  >
+                    <option value="">Select student</option>
+                    {students.map(student => (
+                      <option key={student.id} value={student.id}>{student.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="lg:col-span-2">
+                  <label className="text-[10px] font-mono font-bold uppercase text-indigo-700">Date</label>
+                  <input
+                    type="date"
+                    value={meetingDate}
+                    onChange={event => setMeetingDate(event.target.value)}
+                    required
+                    className="mt-1 w-full rounded-xl border border-indigo-100 bg-white px-3 py-2 text-xs font-semibold text-slate-800 outline-none"
+                  />
+                </div>
+                <div className="lg:col-span-2">
+                  <label className="text-[10px] font-mono font-bold uppercase text-indigo-700">Time</label>
+                  <input
+                    type="time"
+                    value={meetingTime}
+                    onChange={event => setMeetingTime(event.target.value)}
+                    required
+                    className="mt-1 w-full rounded-xl border border-indigo-100 bg-white px-3 py-2 text-xs font-semibold text-slate-800 outline-none"
+                  />
+                </div>
+                <div className="lg:col-span-5">
+                  <label className="text-[10px] font-mono font-bold uppercase text-indigo-700">Agenda</label>
+                  <input
+                    type="text"
+                    value={meetingSummary}
+                    onChange={event => setMeetingSummary(event.target.value)}
+                    required
+                    className="mt-1 w-full rounded-xl border border-indigo-100 bg-white px-3 py-2 text-xs font-semibold text-slate-800 outline-none"
+                    placeholder="Progress review meeting"
+                  />
+                </div>
+                <div className="lg:col-span-7">
+                  <label className="text-[10px] font-mono font-bold uppercase text-indigo-700">Notes</label>
+                  <input
+                    type="text"
+                    value={meetingFeedback}
+                    onChange={event => setMeetingFeedback(event.target.value)}
+                    className="mt-1 w-full rounded-xl border border-indigo-100 bg-white px-3 py-2 text-xs font-semibold text-slate-800 outline-none"
+                    placeholder="Scheduled supervision discussion."
+                  />
+                </div>
+                <div className="lg:col-span-3">
+                  <label className="text-[10px] font-mono font-bold uppercase text-indigo-700">First action</label>
+                  <input
+                    type="text"
+                    value={meetingActions}
+                    onChange={event => setMeetingActions(event.target.value)}
+                    className="mt-1 w-full rounded-xl border border-indigo-100 bg-white px-3 py-2 text-xs font-semibold text-slate-800 outline-none"
+                    placeholder="Prepare progress update."
+                  />
+                </div>
+                <div className="lg:col-span-2 flex items-end">
+                  <button
+                    type="submit"
+                    className="w-full rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white hover:bg-indigo-700"
+                  >
+                    Schedule
+                  </button>
+                </div>
+              </form>
 
               {/* Simple supervisor calendar logs list */}
               <div className="space-y-4">
