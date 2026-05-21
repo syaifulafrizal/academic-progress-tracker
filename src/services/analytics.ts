@@ -108,15 +108,20 @@ export function computeAttentionScore(
   const sUpdates = weeklyUpdates.filter(item => item.studentId === student.id);
   const sMilestones = milestones.filter(item => item.studentId === student.id);
   const sPublications = publications.filter(item => item.studentId === student.id);
+  const createdAt = new Date(student.startDate);
+  const daysSinceStart = Number.isNaN(createdAt.getTime()) ? 999 : (CURRENT_DATE.getTime() - createdAt.getTime()) / 86400000;
+  const isNewProfile = daysSinceStart < 14 && sUpdates.length === 0 && sTasks.length === 0 && sMilestones.every(item => item.progressPercent === 0 || item.status === 'Not started');
   const progress = calculateOverallProgress(student, milestones, [], publications, thesisChapters);
   const timeUsed = calculateTimeUsedPercent(student);
+
+  if (isNewProfile) return 0;
 
   let score = 0;
   const hasOverdue = [...sTasks, ...sMilestones].some(item => item.status === 'Overdue' || (new Date(item.deadline) < CURRENT_DATE && item.status !== 'Completed' && item.status !== 'Approved'));
   if (hasOverdue) score += 30;
 
   const latestUpdate = sUpdates.map(item => new Date(item.weekStart)).sort((a, b) => b.getTime() - a.getTime())[0];
-  if (!latestUpdate) score += 20;
+  if (!latestUpdate && daysSinceStart > 14) score += 20;
   else {
     const days = (CURRENT_DATE.getTime() - latestUpdate.getTime()) / 86400000;
     if (days > 14) score += 20;
@@ -128,10 +133,10 @@ export function computeAttentionScore(
   if (student.studentType !== 'FYP') {
     const expectedPapers = student.studentType === 'PhD' ? 2 : 1;
     const healthyPapers = sPublications.filter(item => publicationProgress(item.status) >= 60).length;
-    if (healthyPapers < expectedPapers) score += 25;
+    if (healthyPapers < expectedPapers && daysSinceStart > 180) score += 25;
   }
 
-  if (thesisChapters.some(item => item.studentId === student.id && item.progressPercent < 40 && new Date(item.updatedAt) < CURRENT_DATE)) score += 10;
+  if (thesisChapters.some(item => item.studentId === student.id && item.progressPercent < 40 && daysSinceStart > 60 && new Date(item.updatedAt) < CURRENT_DATE)) score += 10;
   if (progress >= 75 && sTasks.some(item => item.status !== 'Completed')) score += 15;
 
   return Math.min(100, score);

@@ -240,8 +240,14 @@ export default function LecturerDashboard({
 
   // Dashboard calculations representing stats
   const totalCount = students.length;
+  const fypCount = students.filter(student => student.studentType === 'FYP').length;
+  const masterCount = students.filter(student => student.studentType === 'Master').length;
+  const phdCount = students.filter(student => student.studentType === 'PhD').length;
   const criticalCount = enrichedStudents.filter(s => s.computedRisk === 'Critical').length;
   const delayedCount = enrichedStudents.filter(s => s.computedRisk === 'Delayed').length;
+  const cohortQuality = enrichedStudents.length
+    ? Math.round(enrichedStudents.reduce((sum, student) => sum + student.computedProgress, 0) / enrichedStudents.length)
+    : 0;
   const tasksDueThisWeek = tasks.filter(t => t.status === 'Pending').length;
   const totalOverdueTasks = tasks.filter(t => t.status === 'Overdue').length + milestones.filter(m => m.status === 'Overdue').length;
   const nearGraduationCount = enrichedStudents.filter(s => s.computedProgress >= 75).length;
@@ -265,7 +271,7 @@ export default function LecturerDashboard({
 
   return (
     <div className="flex bg-[#f4f7fc] min-h-screen relative" id="lecturer-workspace-container">
-      {/* LEFT SIDEBAR VIEW (Matching Image 2 Sidebar of Supervisor) */}
+      {/* LEFT SIDEBAR VIEW */}
       <aside className="w-64 bg-[#091830] text-slate-300 md:flex flex-col justify-between shrink-0 shadow-xl hidden relative border-r border-[#0d2242]">
         <div className="flex flex-col animate-fade-in">
           {/* Logo Crest Block */}
@@ -372,7 +378,7 @@ export default function LecturerDashboard({
         {/* CONTAINER WORKSPACE WRAPPER */}
         <div className="p-6 md:p-8 space-y-8 flex-grow overflow-y-auto">
           
-          {/* VIEW: LECTURER PORTAL DASHBOARD (Image 2 representation) */}
+          {/* VIEW: LECTURER PORTAL DASHBOARD */}
           {activeSidebarTab === 'Dashboard' && (
             <div className="space-y-8 animate-fade-in">
               
@@ -389,12 +395,12 @@ export default function LecturerDashboard({
                 
                 <div className="bg-indigo-50 text-indigo-700 rounded-2xl p-4 shrink-0 text-center flex flex-col items-center">
                   <span className="text-xs font-mono uppercase font-black">Cohort Quality</span>
-                  <strong className="text-xl font-sans tracking-tight block">92.5%</strong>
-                  <span className="text-[10px] text-slate-400 mt-0.5">Approval Index</span>
+                  <strong className="text-xl font-sans tracking-tight block">{cohortQuality}%</strong>
+                  <span className="text-[10px] text-slate-400 mt-0.5">Average Progress</span>
                 </div>
               </div>
 
-              {/* ROW 1: SUMMARY TILES/CARDS (5 cards exactly as Image 2) */}
+              {/* ROW 1: SUMMARY TILES/CARDS */}
               <div className="grid grid-cols-2 md:grid-cols-5 gap-4" id="lecturer-summary-cards">
                 {/* Tile 1 */}
                 <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-xs flex flex-col justify-between">
@@ -406,7 +412,7 @@ export default function LecturerDashboard({
                   </div>
                   <div className="mt-4">
                     <h3 className="text-2xl font-extrabold text-slate-900 tracking-tight">{totalCount}</h3>
-                    <p className="text-[10px] text-slate-400 font-mono mt-1">3 PhD • 3 Master • 2 FYP</p>
+                    <p className="text-[10px] text-slate-400 font-mono mt-1">{phdCount} PhD • {masterCount} Master • {fypCount} FYP</p>
                   </div>
                 </div>
 
@@ -1236,8 +1242,8 @@ export default function LecturerDashboard({
                 <FileText className="w-6 h-6" />
               </div>
               <div>
-                <h4 className="text-sm font-bold text-slate-800">Academic Sub-Module ({activeSidebarTab}) Pending</h4>
-                <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1">This panel serves supplementary trackers in Image 2. The critical dashboard charts and data tables have been initialized in full depth in the main workspace controller!</p>
+                <h4 className="text-sm font-bold text-slate-800">{activeSidebarTab}</h4>
+                <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1">No records are available in this section yet. New student activity will appear here once it is added.</p>
               </div>
               <button 
                 onClick={() => setActiveSidebarTab('Dashboard')}
