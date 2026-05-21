@@ -554,43 +554,37 @@ export default function StudentDashboard({
                     <span className="text-xs font-mono text-indigo-600 font-bold bg-indigo-50 px-2 py-0.5 rounded">{readinessPercent}%</span>
                   </div>
 
-                  {/* Horizontal timeline chart stepper */}
-                  <div className="relative mt-4 py-3">
-                    {/* Background Progress bar */}
-                    <div className="absolute left-0 right-0 h-1 bg-slate-100 rounded top-8 -z-0" />
-                    <div 
-                      className="absolute left-0 h-1 bg-indigo-600 rounded top-8 -z-0 transition-all duration-500" 
-                      style={{ width: `${readinessPercent}%` }}
-                    />
+                  <div className="mt-4 h-2 bg-slate-100 rounded-full overflow-hidden">
+                    <div className="h-full bg-indigo-600 rounded-full transition-all duration-500" style={{ width: `${readinessPercent}%` }} />
+                  </div>
 
-                    {/* Timeline items */}
-                    <div className="flex justify-between relative z-10">
-                    {(myMilestones.length ? myMilestones.slice(0, 6).map(milestone => ({
-                      title: milestone.title,
-                      status: milestone.status,
-                      date: new Date(milestone.deadline).toLocaleDateString('en-MY', { month: 'short', year: 'numeric' })
-                    })) : [{ title: 'No milestones yet', status: 'Not started', date: 'Pending' }]).map((step, sIdx) => {
-                        const isDone = step.status === 'Approved' || step.status === 'Completed';
-                        const isInProg = step.status === 'In progress' || step.status === 'Submitted';
-                        return (
-                          <div key={sIdx} className="flex flex-col items-center">
-                            <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all ${
-                              isDone ? 'bg-emerald-500 border-white text-white' :
-                              isInProg ? 'bg-indigo-600 border-white text-white' :
+                  <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {myMilestones.length === 0 ? (
+                      <p className="text-xs text-slate-400 bg-slate-50 border border-slate-100 rounded-xl p-3 sm:col-span-2">No milestones assigned yet.</p>
+                    ) : myMilestones.slice(0, 6).map((milestone, index) => {
+                      const isDone = milestone.status === 'Approved' || milestone.status === 'Completed';
+                      const isInProg = milestone.status === 'In progress' || milestone.status === 'Submitted';
+                      return (
+                        <div key={milestone.id} className="rounded-2xl border border-slate-100 bg-slate-50/60 p-3 min-w-0">
+                          <div className="flex items-start gap-2 min-w-0">
+                            <div className={`mt-0.5 h-5 w-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                              isDone ? 'bg-emerald-500 border-emerald-500 text-white' :
+                              isInProg ? 'bg-indigo-600 border-indigo-600 text-white' :
                               'bg-white border-slate-300 text-slate-500'
                             }`}>
-                              {isDone && <Check className="w-2.5 h-2.5 stroke-[3]" />}
+                              {isDone ? <Check className="w-3 h-3 stroke-[3]" /> : <span className="text-[9px] font-bold">{index + 1}</span>}
                             </div>
-                            <span className="text-[9px] font-bold text-slate-800 font-sans text-center mt-2 whitespace-nowrap">
-                              {step.title}
-                            </span>
-                            <span className="text-[8px] text-slate-400 font-mono text-center block mt-0.5">
-                              {step.date}
-                            </span>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-xs font-bold text-slate-800 truncate" title={milestone.title}>{milestone.title}</p>
+                              <div className="mt-1 flex items-center justify-between gap-2">
+                                <span className="text-[10px] text-slate-400 font-mono">{new Date(milestone.deadline).toLocaleDateString('en-MY', { month: 'short', year: 'numeric' })}</span>
+                                <span className="text-[10px] text-indigo-600 font-mono font-bold">{milestone.progressPercent}%</span>
+                              </div>
+                            </div>
                           </div>
-                        );
-                      })}
-                    </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
 
