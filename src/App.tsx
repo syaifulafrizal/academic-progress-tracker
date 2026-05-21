@@ -66,6 +66,16 @@ function getAuthErrorMessage(error: unknown) {
   return message;
 }
 
+function attachStudentProfileToUser(user: AppUser, remoteData: AppData): AppUser {
+  if (user.role !== 'Student') return user;
+  const linkedStudent = remoteData.students.find(student => student.userId === user.id) || remoteData.students[0];
+  if (!linkedStudent) return user;
+  return {
+    ...user,
+    studentId: linkedStudent.id
+  };
+}
+
 function LoginScreen({
   users,
   onLogin,
@@ -319,7 +329,7 @@ export default function App() {
         if (!session) return;
         const user = await getOrCreateProfile(session);
         const remoteData = await loadSupabaseData(user);
-        setCurrentUser(user);
+        setCurrentUser(attachStudentProfileToUser(user, remoteData));
         setData(remoteData);
         setIsProductionData(true);
       })
@@ -341,7 +351,7 @@ export default function App() {
     if (!session) throw new Error('Email confirmation may be required before signing in.');
     const user = await getOrCreateProfile(session);
     const remoteData = await loadSupabaseData(user);
-    setCurrentUser(user);
+    setCurrentUser(attachStudentProfileToUser(user, remoteData));
     setData(remoteData);
     setIsProductionData(true);
   };
@@ -353,7 +363,7 @@ export default function App() {
     if (!result.session) return;
     const user = await getOrCreateProfile(result.session, name.trim(), role);
     const remoteData = await loadSupabaseData(user);
-    setCurrentUser(user);
+    setCurrentUser(attachStudentProfileToUser(user, remoteData));
     setData(remoteData);
     setIsProductionData(true);
   };
