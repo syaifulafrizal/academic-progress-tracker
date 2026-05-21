@@ -63,6 +63,9 @@ function getAuthErrorMessage(error: unknown) {
   if (normalized.includes('invalid login') || normalized.includes('invalid credentials')) {
     return 'Email or password is incorrect.';
   }
+  if (normalized.includes('invalid api key') || normalized.includes('api key')) {
+    return 'Live database connection is misconfigured. Check the Vercel environment variables for the project URL and publishable key, then redeploy.';
+  }
   return message;
 }
 
