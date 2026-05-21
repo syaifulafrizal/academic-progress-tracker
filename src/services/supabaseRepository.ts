@@ -14,7 +14,7 @@ import {
   WeeklyUpdate
 } from '../types';
 import { createInitialData } from './demoStore';
-import { supabase } from './supabaseClient';
+import { authRedirectUrl, supabase } from './supabaseClient';
 
 type ProfileRow = {
   id: string;
@@ -64,11 +64,14 @@ export async function signUpWithPassword(email: string, password: string, name: 
     email,
     password,
     options: {
+      emailRedirectTo: authRedirectUrl,
       data: { name, role }
     }
   });
   if (error) throw error;
-  if (!data.user) throw new Error('Supabase did not return a user after sign up.');
+  if (!data.user) {
+    return { session: null, needsEmailConfirmation: true };
+  }
 
   if (data.session) {
     const { error: profileError } = await client.from('profiles').upsert({
@@ -79,7 +82,11 @@ export async function signUpWithPassword(email: string, password: string, name: 
     });
     if (profileError) throw profileError;
   }
-  return data.session;
+
+  return {
+    session: data.session,
+    needsEmailConfirmation: !data.session
+  };
 }
 
 export async function signOut() {

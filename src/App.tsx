@@ -51,6 +51,21 @@ function makeId(prefix: string) {
   return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
 }
 
+function getAuthErrorMessage(error: unknown) {
+  const message = error instanceof Error ? error.message : 'Unable to complete account request.';
+  const normalized = message.toLowerCase();
+  if (normalized.includes('rate limit') || normalized.includes('email rate limit')) {
+    return 'Too many signup emails were requested. Please wait a few minutes before trying again, or disable email confirmation during tester setup.';
+  }
+  if (normalized.includes('already registered') || normalized.includes('already exists')) {
+    return 'An account with this email already exists. Please sign in instead.';
+  }
+  if (normalized.includes('invalid login') || normalized.includes('invalid credentials')) {
+    return 'Email or password is incorrect.';
+  }
+  return message;
+}
+
 function LoginScreen({
   users,
   onLogin,
@@ -92,7 +107,7 @@ function LoginScreen({
         onLogin(selectedUser);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to sign in.');
+      setError(getAuthErrorMessage(err));
     } finally {
       setIsSubmitting(false);
     }
@@ -154,7 +169,7 @@ function LoginScreen({
           <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 flex gap-3">
             <AlertTriangle className="h-5 w-5 shrink-0" />
             <p>
-              {isSupabaseConfigured ? 'Supabase is configured. Use a real account, or switch to preview mode for local sample data.' : 'Preview mode is active. Add Supabase env vars to enable production Auth, Postgres, and Storage.'}
+              {isSupabaseConfigured ? 'Use your ProgressPilot account, or switch to preview mode for local sample data.' : 'Preview mode is active. Add connection env vars to enable live accounts and database storage.'}
             </p>
           </div>
 
@@ -166,7 +181,7 @@ function LoginScreen({
                 disabled={!isSupabaseConfigured}
                 className={`rounded-xl py-2 text-xs font-black ${authMode === 'supabase' ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-500'} disabled:opacity-40`}
               >
-                Supabase Login
+                Sign In
               </button>
               <button
                 type="button"
@@ -242,7 +257,7 @@ function LoginScreen({
                     value={password}
                     onChange={event => setPassword(event.target.value)}
                     className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold focus:outline-none focus:ring-4 focus:ring-blue-100"
-                    placeholder="Your Supabase password"
+                    placeholder="Your account password"
                   />
                 </div>
               </>
@@ -270,13 +285,13 @@ function LoginScreen({
               }}
               className="mt-4 w-full text-xs font-black text-blue-700 hover:text-blue-900"
             >
-              {isCreatingAccount ? 'Use existing Supabase account' : 'Create first lecturer or tester account'}
+              {isCreatingAccount ? 'Use existing account' : 'Create lecturer or tester account'}
             </button>
           )}
 
           <div className="mt-6 text-xs text-slate-500 space-y-2">
             <p className="font-bold text-slate-700">Production status</p>
-            <p>Supabase configured: <span className={isSupabaseConfigured ? 'text-emerald-600 font-bold' : 'text-amber-600 font-bold'}>{isSupabaseConfigured ? 'Yes' : 'No'}</span></p>
+            <p>Live database configured: <span className={isSupabaseConfigured ? 'text-emerald-600 font-bold' : 'text-amber-600 font-bold'}>{isSupabaseConfigured ? 'Yes' : 'No'}</span></p>
             <p>Database schema: supabase/migrations/001_initial_schema.sql and 002_auth_profile_policies.sql</p>
           </div>
         </section>
@@ -334,9 +349,9 @@ export default function App() {
   const handleSupabaseSignUp = async (name: string, email: string, password: string, role: AppUser['role']) => {
     if (!name.trim()) throw new Error('Name is required.');
     if (password.length < 6) throw new Error('Password must be at least 6 characters.');
-    const session = await signUpWithPassword(email, password, name.trim(), role);
-    if (!session) return;
-    const user = await getOrCreateProfile(session, name.trim(), role);
+    const result = await signUpWithPassword(email, password, name.trim(), role);
+    if (!result.session) return;
+    const user = await getOrCreateProfile(result.session, name.trim(), role);
     const remoteData = await loadSupabaseData(user);
     setCurrentUser(user);
     setData(remoteData);
