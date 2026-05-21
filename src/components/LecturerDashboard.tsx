@@ -219,7 +219,7 @@ export default function LecturerDashboard({
             </div>
             <div>
               <h2 className="text-white text-sm font-sans font-extrabold tracking-tight uppercase leading-none">
-                ProgressPilot
+                Academic Tracker
               </h2>
               <p className="text-[10px] text-zinc-400 font-mono tracking-wider mt-1">Progress Tracker</p>
             </div>
@@ -1108,7 +1108,7 @@ export default function LecturerDashboard({
 
         {/* FOOTER */}
         <footer className="bg-white border-t border-slate-100 py-6 text-center text-xs text-slate-400 font-mono">
-          <div>ProgressPilot • Academic progress tracking workspace</div>
+          <div>academic-progress-tracker • Academic progress tracking workspace</div>
           <div className="mt-1 font-semibold text-slate-505 text-slate-500">React + Tailwind UI Layer</div>
         </footer>
       </div>

@@ -1,5 +1,5 @@
 {
-  "name": "Research Progress Tracker",
+  "name": "academic-progress-tracker",
   "description": "A role-based academic progress tracker for lecturers and students to monitor milestones, weekly updates, thesis progress, tasks, meetings, and research outputs.",
   "requestFramePermissions": [],
   "majorCapabilities": []

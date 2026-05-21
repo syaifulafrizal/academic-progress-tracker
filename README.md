@@ -1,4 +1,4 @@
-# Research Progress Tracker
+# academic-progress-tracker
 
 Production-oriented MVP for lecturer/student research progress tracking.
 

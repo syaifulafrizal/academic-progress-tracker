@@ -300,7 +300,7 @@ export default function StudentDashboard({
             </div>
             <div>
               <h2 className="text-white text-sm font-sans font-extrabold tracking-tight uppercase leading-tight">
-                ProgressPilot
+                Academic Tracker
               </h2>
               <p className="text-[10px] text-zinc-400 font-mono tracking-wider">Progress Tracker</p>
             </div>
@@ -1560,7 +1560,7 @@ export default function StudentDashboard({
 
         {/* FOOTER */}
         <footer className="bg-white border-t border-slate-100 py-6 text-center text-xs text-slate-400 font-mono">
-          <div>Research Progress Tracker • Progress tracking workspace</div>
+          <div>academic-progress-tracker • Progress tracking workspace</div>
           <div className="mt-1 font-semibold text-slate-500">Built using React and Tailwind CSS</div>
         </footer>
       </div>

@@ -132,8 +132,8 @@ function LoginScreen({
               <GraduationCap className="h-7 w-7" />
             </div>
             <div>
-              <p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">ProgressPilot</p>
-              <h1 className="text-2xl font-black tracking-tight">Research Progress Tracker</h1>
+              <p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">Academic Tracker</p>
+              <h1 className="text-2xl font-black tracking-tight">academic-progress-tracker</h1>
             </div>
           </div>
 
@@ -181,8 +181,8 @@ function LoginScreen({
             <p>
               {isSupabaseConfigured
                 ? isPreviewModeAvailable
-                  ? 'Use your ProgressPilot account, or switch to preview mode for local sample data.'
-                  : 'Use your ProgressPilot account to access the live workspace.'
+                  ? 'Use your academic-progress-tracker account, or switch to preview mode for local sample data.'
+                  : 'Use your academic-progress-tracker account to access the live workspace.'
                 : 'Preview mode is active. Add connection env vars to enable live accounts and database storage.'}
             </p>
           </div>
@@ -640,8 +640,8 @@ export default function App() {
               <GraduationCap className="w-5 h-5 text-white" />
             </div>
             <div>
-              <span className="text-[10px] uppercase tracking-wider font-mono text-blue-200 font-bold">ProgressPilot</span>
-              <h1 className="text-sm font-extrabold text-slate-100 leading-none">Research Progress Tracker</h1>
+              <span className="text-[10px] uppercase tracking-wider font-mono text-blue-200 font-bold">Academic Tracker</span>
+              <h1 className="text-sm font-extrabold text-slate-100 leading-none">academic-progress-tracker</h1>
             </div>
           </div>
 
