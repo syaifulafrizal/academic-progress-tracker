@@ -52,13 +52,18 @@ export default function StudentProfileView({
   isProductionData = false,
   thesisChapters = []
 }: StudentProfileViewProps) {
+  const getDateAfterDays = (days: number) => {
+    const date = new Date();
+    date.setDate(date.getDate() + days);
+    return date.toISOString().slice(0, 10);
+  };
   
   // States for compiling new Meeting Log
   const [meetingSummary, setMeetingSummary] = useState('');
   const [meetingFeedback, setMeetingFeedback] = useState('');
   const [meetingActions, setMeetingActions] = useState<string>('');
-  const [meetingDeadline, setMeetingDeadline] = useState('2026-05-30');
-  const [nextMeetingDate, setNextMeetingDate] = useState('2026-06-04');
+  const [meetingDeadline, setMeetingDeadline] = useState(() => getDateAfterDays(7));
+  const [nextMeetingDate, setNextMeetingDate] = useState(() => getDateAfterDays(14));
   
   // State for typing custom feedback on weekly updates
   const [activeFeedbackUpdateId, setActiveFeedbackUpdateId] = useState<string | null>(null);
@@ -97,7 +102,7 @@ export default function StudentProfileView({
       .filter(line => line.length > 0);
 
     onAddMeetingLog({
-      meetingDate: '2026-05-20', // current date
+      meetingDate: new Date().toISOString().slice(0, 10),
       summary: meetingSummary,
       supervisorFeedback: meetingFeedback,
       actionItems: compiledActions.length > 0 ? compiledActions : ['Review overall targets'],
@@ -108,7 +113,7 @@ export default function StudentProfileView({
     setMeetingSummary('');
     setMeetingFeedback('');
     setMeetingActions('');
-    alert("New meeting log entry published successfully matching Section 9 schema!");
+    alert("New meeting log entry published successfully.");
   };
 
   const handlePublishUpdateFeedback = (updateId: string) => {
@@ -420,7 +425,7 @@ export default function StudentProfileView({
                   rows={2}
                   value={meetingActions}
                   onChange={(e) => setMeetingActions(e.target.value)}
-                  placeholder="Incorporate variance bounds on David's graphs&#10;Submit draft Chapter 5 output"
+                  placeholder="Add one action item per line"
                   className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-850 outline-none focus:bg-white focus:ring-2 focus:ring-indigo-150 transition-all font-sans font-mono"
                 />
               </div>

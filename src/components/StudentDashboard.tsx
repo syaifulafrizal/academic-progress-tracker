@@ -50,6 +50,11 @@ export default function StudentDashboard({
   onUpdateMilestoneProgress,
   thesisChapters = []
 }: StudentDashboardProps) {
+  const getDateAfterDays = (days: number) => {
+    const date = new Date();
+    date.setDate(date.getDate() + days);
+    return date.toISOString().slice(0, 10);
+  };
   
   // Driving sidebar items (Image 1 sidebars)
   const [activeSidebarTab, setActiveSidebarTab] = useState<'Dashboard' | 'Milestones' | 'WeeklyTasks' | 'Meetings' | 'Thesis' | 'Publications' | 'Uploads' | 'Feedback' | 'Calendar' | 'Settings'>('Dashboard');
@@ -66,7 +71,7 @@ export default function StudentDashboard({
   const [blockerText, setBlockerText] = useState('');
   const [nextPlanText, setNextPlanText] = useState('');
   const [relatedMilestoneId, setRelatedMilestoneId] = useState('');
-  const [deadlineDate, setDeadlineDate] = useState('2025-05-27');
+  const [deadlineDate, setDeadlineDate] = useState(() => getDateAfterDays(7));
   const [needFeedback, setNeedFeedback] = useState(false);
   const [tempFileName, setTempFileName] = useState('');
   const [manualFileName, setManualFileName] = useState('');
@@ -76,8 +81,8 @@ export default function StudentDashboard({
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskDesc, setNewTaskDesc] = useState('');
   const [newTaskPriority, setNewTaskPriority] = useState<'High' | 'Medium' | 'Low'>('Medium');
-  const [newTaskDeadline, setNewTaskDeadline] = useState('2025-05-27');
-  const [newTaskArea, setNewTaskArea] = useState('Chapter 3');
+  const [newTaskDeadline, setNewTaskDeadline] = useState(() => getDateAfterDays(7));
+  const [newTaskArea, setNewTaskArea] = useState('General');
   const today = useMemo(() => new Date(), []);
   const [visibleCalendarMonth, setVisibleCalendarMonth] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1));
 
@@ -229,7 +234,7 @@ export default function StudentDashboard({
     
     onAddWeeklyUpdate({
       studentId: currentStudent.id,
-      weekStart: '2025-05-18', // current reporting week commencing
+      weekStart: new Date().toISOString().slice(0, 10),
       completedThisWeek: completedText,
       notCompleted: notCompletedText || 'None.',
       blocker: blockerText || 'None.',
@@ -270,7 +275,7 @@ export default function StudentDashboard({
 
   const handleUploadDirectly = (e: React.FormEvent) => {
     e.preventDefault();
-    const finalName = manualFileName || 'retinal_validation_run.xlsx';
+    const finalName = manualFileName || 'progress-evidence.pdf';
     onFileUpload(finalName, selectedMilestoneForUpload);
     setManualFileName('');
     alert(`File "${finalName}" uploaded successfully under "${selectedMilestoneForUpload}"!`);
@@ -299,6 +304,17 @@ export default function StudentDashboard({
   const circumferenceGauge = Math.PI * radiusGauge; // ~110
   const readinessPercent = calculateOverallProgress(currentStudent, myMilestones, myObjectives, myPublications, myThesisChapters);
   const strokeDashoffsetGauge = circumferenceGauge - (readinessPercent / 100) * circumferenceGauge;
+  const pendingStudentEvents = studentCalendarEvents
+    .filter(event => event.visibility === 'mine' && event.date >= formatLocalDate(today))
+    .sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time));
+  const nextDeadlineEvent = pendingStudentEvents.find(event => event.type !== 'Own meeting');
+  const nextMeetingEvent = pendingStudentEvents.find(event => event.type === 'Own meeting') || studentCalendarEvents.find(event => event.type === 'Own meeting');
+  const latestMeeting = [...myMeetingLogs].sort((a, b) => b.meetingDate.localeCompare(a.meetingDate))[0];
+  const latestFeedback = myUpdates.find(update => update.feedbackText)?.feedbackText || latestMeeting?.supervisorFeedback;
+  const completedMilestonesCount = myMilestones.filter(milestone => milestone.status === 'Approved').length;
+  const completedPublicationsCount = myPublications.filter(pub => pub.status === 'Accepted' || pub.status === 'Published').length;
+  const completedThesisCount = myThesisChapters.filter(chapter => chapter.status === 'Approved' || chapter.progressPercent >= 100).length;
+  const completedMeetingCount = myMeetingLogs.filter(log => log.meetingDate <= formatLocalDate(today)).length;
 
   return (
     <div className="flex bg-[#f4f7fc] min-h-screen relative" id="student-workspace-container">
@@ -518,8 +534,10 @@ export default function StudentDashboard({
                 <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-xs flex items-center justify-between">
                   <div className="space-y-1">
                     <span className="text-[10px] uppercase font-mono font-bold text-slate-400">Next Deadline</span>
-                    <h3 className="text-[15px] font-extrabold text-orange-600 tracking-tight">May 20, 2025</h3>
-                    <span className="text-[10px] text-slate-400 truncate block">Literature Review Update</span>
+                    <h3 className="text-[15px] font-extrabold text-orange-600 tracking-tight">
+                      {nextDeadlineEvent ? new Date(nextDeadlineEvent.date).toLocaleDateString('en-MY', { day: 'numeric', month: 'short', year: 'numeric' }) : 'No upcoming deadline'}
+                    </h3>
+                    <span className="text-[10px] text-slate-400 truncate block">{nextDeadlineEvent?.title || 'Nothing scheduled yet'}</span>
                   </div>
                   <div className="p-3 bg-orange-50 text-orange-600 rounded-2xl shrink-0">
                     <Calendar className="w-6 h-6" />
@@ -547,16 +565,13 @@ export default function StudentDashboard({
 
                     {/* Timeline items */}
                     <div className="flex justify-between relative z-10">
-                      {[
-                        { title: 'Coursework', status: 'Completed', date: 'May 2022' },
-                        { title: 'Research Plan', status: 'Completed', date: 'Aug 2022' },
-                        { title: 'Data Collection', status: 'Completed', date: 'Oct 2023' },
-                        { title: 'Publications', status: 'In Progress', date: '2 / 2' },
-                        { title: 'Thesis Writing', status: 'In Progress', date: 'Ch. 1-3' },
-                        { title: 'Viva & Defense', status: 'Pending', date: 'Pending' }
-                      ].map((step, sIdx) => {
-                        const isDone = step.status === 'Completed';
-                        const isInProg = step.status === 'In Progress';
+                    {(myMilestones.length ? myMilestones.slice(0, 6).map(milestone => ({
+                      title: milestone.title,
+                      status: milestone.status,
+                      date: new Date(milestone.deadline).toLocaleDateString('en-MY', { month: 'short', year: 'numeric' })
+                    })) : [{ title: 'No milestones yet', status: 'Not started', date: 'Pending' }]).map((step, sIdx) => {
+                        const isDone = step.status === 'Approved' || step.status === 'Completed';
+                        const isInProg = step.status === 'In progress' || step.status === 'Submitted';
                         return (
                           <div key={sIdx} className="flex flex-col items-center">
                             <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all ${
@@ -611,19 +626,19 @@ export default function StudentDashboard({
                     </svg>
 
                     {/* Donut Center text */}
-                    <div className="absolute text-center">
-                      <strong className="text-xl font-extrabold text-slate-900 font-mono block">16</strong>
-                      <span className="text-[9px] text-slate-400 font-sans block leading-none">of 24 months</span>
+                  <div className="absolute text-center">
+                      <strong className="text-xl font-extrabold text-slate-900 font-mono block">{timeUsedPercent}%</strong>
+                      <span className="text-[9px] text-slate-400 font-sans block leading-none">time used</span>
                     </div>
                   </div>
 
                   {/* Donut Legend */}
                   <div className="flex gap-4 text-[10px] font-mono mt-2">
                     <span className="flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-[#3490dc]" /> Time Used (67%)
+                      <span className="w-2 h-2 rounded-full bg-[#3490dc]" /> Time Used ({timeUsedPercent}%)
                     </span>
                     <span className="flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-[#f1f5f9]" /> Rem. (33%)
+                      <span className="w-2 h-2 rounded-full bg-[#f1f5f9]" /> Rem. ({Math.max(0, 100 - timeUsedPercent)}%)
                     </span>
                   </div>
                 </div>
@@ -633,8 +648,10 @@ export default function StudentDashboard({
                   <span className="text-[10px] font-mono font-bold uppercase text-slate-400 block">Next Meeting</span>
                   
                   <div className="mt-2 text-xs">
-                    <strong className="text-indigo-600 block font-mono">Friday, May 16, 2025 • 11:00 AM</strong>
-                    <h4 className="text-sm font-extrabold leading-tight text-slate-800 mt-1">Progress Review Meeting</h4>
+                    <strong className="text-indigo-600 block font-mono">
+                      {nextMeetingEvent ? `${new Date(nextMeetingEvent.date).toLocaleDateString('en-MY', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })} • ${nextMeetingEvent.time}` : 'No meeting scheduled'}
+                    </strong>
+                    <h4 className="text-sm font-extrabold leading-tight text-slate-800 mt-1">{nextMeetingEvent?.title || 'Awaiting supervisor schedule'}</h4>
                   </div>
 
                   <div className="flex items-center gap-2 mt-3">
@@ -651,7 +668,7 @@ export default function StudentDashboard({
                   </div>
 
                   <button 
-                    onClick={() => alert("Meeting Room 412. Supervisor has initiated the Zoom/Physical link.")}
+                    onClick={() => setActiveSidebarTab('Meetings')}
                     className="w-full mt-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 font-sans font-bold py-2 rounded-xl text-xs transition-colors cursor-pointer text-center"
                   >
                     View Meeting Details
@@ -674,22 +691,21 @@ export default function StudentDashboard({
                     </button>
                   </div>
 
-                  {/* List matching Ahmed Raza's milestones */}
                   <div className="space-y-2.5">
-                    {[
-                      { title: 'Objectives 1-3', status: 'Completed', color: 'bg-emerald-100 text-emerald-800 border-emerald-200' },
-                      { title: 'Paper 1', status: 'Submitted', color: 'bg-indigo-100 text-indigo-800 border-indigo-200' },
-                      { title: 'Paper 2', status: 'Under Review', color: 'bg-purple-100 text-purple-800 border-purple-200' },
-                      { title: 'Thesis Chapters 1-3', status: 'In Progress', color: 'bg-orange-100 text-orange-855 text-orange-800 border-orange-200' },
-                      { title: 'Thesis Chapters 4-5', status: 'Not Started', color: 'bg-slate-100 text-slate-600 border-slate-200' },
-                      { title: 'Viva & Defense', status: 'Not Started', color: 'bg-slate-100 text-slate-600 border-slate-200' }
-                    ].map((mil, mIdx) => (
+                    {myMilestones.length === 0 ? (
+                      <p className="text-xs text-slate-400 bg-slate-50 border border-slate-100 rounded-xl p-3">No milestones assigned yet.</p>
+                    ) : myMilestones.slice(0, 6).map((mil, mIdx) => (
                       <div 
-                        key={mIdx}
+                        key={mil.id}
                         className="flex items-center justify-between p-2.5 hover:bg-slate-50 rounded-xl border border-slate-100/40 transition-colors"
                       >
                         <span className="text-xs font-semibold text-slate-700">{mil.title}</span>
-                        <span className={`text-[10px] font-bold px-2 py-0.5 border rounded-full ${mil.color}`}>
+                        <span className={`text-[10px] font-bold px-2 py-0.5 border rounded-full ${
+                          mil.status === 'Approved' ? 'bg-emerald-100 text-emerald-800 border-emerald-200' :
+                          mil.status === 'Submitted' ? 'bg-indigo-100 text-indigo-800 border-indigo-200' :
+                          mil.status === 'In progress' ? 'bg-orange-100 text-orange-800 border-orange-200' :
+                          'bg-slate-100 text-slate-600 border-slate-200'
+                        }`}>
                           {mil.status}
                         </span>
                       </div>
@@ -730,9 +746,7 @@ export default function StudentDashboard({
                                   {task.title}
                                 </span>
                               </td>
-                              <td className="py-2.5 text-slate-500 text-[10px] font-mono whitespace-nowrap">
-                                May 20, 2025
-                              </td>
+                              <td className="py-2.5 text-slate-500 text-[10px] font-mono whitespace-nowrap">{task.deadline}</td>
                               <td className="py-2.5">
                                 <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${
                                   isDone ? 'bg-emerald-50 text-emerald-700' : 'bg-orange-50 text-orange-700'
@@ -758,7 +772,7 @@ export default function StudentDashboard({
                   <div>
                     <div className="flex items-center justify-between mb-2">
                       <h3 className="text-sm font-bold text-slate-800 font-sans">Recent Meeting Summary</h3>
-                      <span className="text-[9px] font-mono text-zinc-400">May 2, 2025</span>
+                      <span className="text-[9px] font-mono text-zinc-400">{latestMeeting?.meetingDate || 'No meetings yet'}</span>
                     </div>
 
                     <div className="flex items-center justify-between border-b border-slate-100 pb-2.5 mb-2.5">
@@ -782,23 +796,17 @@ export default function StudentDashboard({
 
                     <div className="text-xs space-y-2">
                       <p className="text-slate-650 leading-relaxed italic border-l-2 border-indigo-200 pl-2">
-                        &quot;Good progress on the methodology chapter. Ensure deeper analysis of baseline models. Strengthen experimental setup section.&quot;
+                        {latestMeeting ? `"${latestMeeting.summary}"` : 'No meeting summary has been recorded yet.'}
                       </p>
 
                       <strong className="text-[9px] uppercase font-mono text-slate-400 block mt-2">Next Action Items</strong>
                       <div className="space-y-1 text-slate-600 font-sans">
-                        <label className="flex items-start gap-1.5 text-xs select-none">
-                          <input type="checkbox" defaultChecked className="mt-0.5 rounded text-indigo-600 focus:ring-none" />
-                          <span>Add more ablation study results</span>
-                        </label>
-                        <label className="flex items-start gap-1.5 text-xs select-none">
-                          <input type="checkbox" defaultChecked className="mt-0.5 rounded text-indigo-600" />
-                          <span>Compare with recent SOTA papers</span>
-                        </label>
-                        <label className="flex items-start gap-1.5 text-xs select-none">
-                          <input type="checkbox" defaultChecked className="mt-0.5 rounded text-indigo-600" />
-                          <span>Update Chapter 3 by May 20</span>
-                        </label>
+                        {(latestMeeting?.actionItems.length ? latestMeeting.actionItems : ['No action items assigned yet.']).map(item => (
+                          <label key={item} className="flex items-start gap-1.5 text-xs select-none">
+                            <input type="checkbox" className="mt-0.5 rounded text-indigo-600 focus:ring-none" />
+                            <span>{item}</span>
+                          </label>
+                        ))}
                       </div>
                     </div>
                   </div>
@@ -830,12 +838,14 @@ export default function StudentDashboard({
                     </div>
 
                     <div className="space-y-3">
-                      {myPublications.map(pub => (
+                      {myPublications.length === 0 ? (
+                        <p className="text-xs text-slate-400 bg-slate-50 border border-slate-100 rounded-xl p-3">No publications recorded yet.</p>
+                      ) : myPublications.map(pub => (
                         <div key={pub.id} className="p-3 bg-slate-50 border border-slate-200/50 rounded-xl text-xs">
                           <strong className="text-slate-800 line-clamp-1">{pub.title}</strong>
                           <span className="text-[10px] text-slate-450 block italic mt-0.5">{pub.targetJournal}</span>
                           <div className="flex justify-between items-center mt-2 pt-2 border-t border-slate-200/40">
-                            <span className="text-[9px] text-zinc-400 font-mono">Submitted Apr 28, 2025</span>
+                            <span className="text-[9px] text-zinc-400 font-mono">{pub.submissionDate ? `Submitted ${pub.submissionDate}` : 'No submission date'}</span>
                             <span className={`px-1.5 py-0.2 rounded text-[9px] font-bold border ${
                               pub.status === 'Submitted' ? 'bg-indigo-50 text-indigo-700 border-indigo-150' : 'bg-purple-50 text-purple-700 border-purple-150'
                             }`}>
@@ -886,22 +896,18 @@ export default function StudentDashboard({
                   </div>
 
                   <div className="space-y-2.5 text-xs">
-                    {[
-                      { chapter: 'Chapter 1: Introduction', progress: 100, color: 'bg-emerald-500' },
-                      { chapter: 'Chapter 2: Literature Review', progress: 100, color: 'bg-emerald-500' },
-                      { chapter: 'Chapter 3: Methodology', progress: 75, color: 'bg-blue-500' },
-                      { chapter: 'Chapter 4: Results', progress: 20, color: 'bg-indigo-500' },
-                      { chapter: 'Chapter 5: Conclusion', progress: 0, color: 'bg-slate-200' }
-                    ].map((ch, cIndex) => (
+                    {myThesisChapters.length === 0 ? (
+                      <p className="text-xs text-slate-400 bg-slate-50 border border-slate-100 rounded-xl p-3">No thesis chapters initialized yet.</p>
+                    ) : myThesisChapters.slice(0, 5).map((ch, cIndex) => (
                       <div key={cIndex}>
                         <div className="flex justify-between text-[11px] mb-0.5 uppercase tracking-wide font-mono text-slate-500">
-                          <span>{ch.chapter}</span>
-                          <span className="font-bold">{ch.progress}%</span>
+                          <span>{ch.title}</span>
+                          <span className="font-bold">{ch.progressPercent}%</span>
                         </div>
                         <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
                           <div 
-                            className={`${ch.color} h-full rounded-full transition-all`} 
-                            style={{ width: `${ch.progress}%` }}
+                            className={`${ch.progressPercent >= 100 ? 'bg-emerald-500' : ch.progressPercent > 0 ? 'bg-blue-500' : 'bg-slate-200'} h-full rounded-full transition-all`} 
+                            style={{ width: `${ch.progressPercent}%` }}
                           />
                         </div>
                       </div>
@@ -914,19 +920,16 @@ export default function StudentDashboard({
                   <span className="text-[10px] font-mono font-bold text-slate-400 block mb-3 uppercase">Upcoming Deadlines</span>
                   
                   <div className="space-y-3 font-sans">
-                    {[
-                      { month: 'MAY', day: '16', label: 'Progress Review Meeting', time: '11:00 AM' },
-                      { month: 'MAY', day: '20', label: 'Literature Review Update', time: '11:59 PM' },
-                      { month: 'MAY', day: '23', label: 'Write Chapter 3 - Results', time: '11:59 PM' },
-                      { month: 'JUN', day: '02', label: 'Ablation Study Report', time: '11:59 PM' }
-                    ].map((dead, dIdx) => (
+                    {pendingStudentEvents.length === 0 ? (
+                      <p className="text-xs text-slate-400 bg-slate-50 border border-slate-100 rounded-xl p-3">No upcoming deadlines.</p>
+                    ) : pendingStudentEvents.slice(0, 4).map((dead, dIdx) => (
                       <div key={dIdx} className="flex gap-2.5 items-center">
                         <div className="bg-indigo-50 text-indigo-700 rounded-xl p-1.5 w-10 text-center shrink-0">
-                          <span className="text-[9px] font-bold block leading-none">{dead.month}</span>
-                          <span className="text-sm font-black leading-none mt-0.5 block font-mono">{dead.day}</span>
+                          <span className="text-[9px] font-bold block leading-none">{new Date(dead.date).toLocaleDateString('en-MY', { month: 'short' }).toUpperCase()}</span>
+                          <span className="text-sm font-black leading-none mt-0.5 block font-mono">{new Date(dead.date).getDate()}</span>
                         </div>
                         <div className="min-w-0">
-                          <h5 className="text-xs font-bold text-slate-800 leading-tight truncate">{dead.label}</h5>
+                          <h5 className="text-xs font-bold text-slate-800 leading-tight truncate">{dead.title}</h5>
                           <span className="text-[9px] text-slate-505 text-slate-400 font-mono mt-0.5 block">{dead.time}</span>
                         </div>
                       </div>
@@ -945,21 +948,19 @@ export default function StudentDashboard({
                     <div className="text-xs border-b border-slate-100 pb-2 mb-2">
                       <strong className="text-slate-800 block">Supervisor</strong>
                       <p className="text-slate-500 leading-relaxed mt-1">
-                        &quot;Your methodology is solid and well-structured. Focus on strengthening the experimental evaluation. Ensure all claims are supported.&quot;
+                        {latestFeedback ? `"${latestFeedback}"` : 'No supervisor feedback has been recorded yet.'}
                       </p>
                     </div>
 
                     <strong className="text-[9px] uppercase font-mono text-zinc-400 block mt-1">Suggested Focus This Week</strong>
                     <div className="space-y-1 text-[11px] text-slate-600 mt-1 font-sans">
-                      <div className="flex items-center gap-1.5">
-                        <Check className="w-3.5 h-3.5 text-emerald-500" /> Enhance result analysis
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <Check className="w-3.5 h-3.5 text-emerald-500" /> Compare with recent works
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <Check className="w-3.5 h-3.5 text-emerald-500" /> Prepare for next meeting
-                      </div>
+                      {(myTasks.filter(task => task.status !== 'Completed').slice(0, 3).map(task => task.title).length
+                        ? myTasks.filter(task => task.status !== 'Completed').slice(0, 3).map(task => task.title)
+                        : ['No pending focus items.']).map(item => (
+                        <div key={item} className="flex items-center gap-1.5">
+                          <Check className="w-3.5 h-3.5 text-emerald-500" /> {item}
+                        </div>
+                      ))}
                     </div>
                   </div>
                 </div>
@@ -1004,25 +1005,25 @@ export default function StudentDashboard({
                       <span className="flex items-center gap-1.5">
                         <Check className="w-4 h-4 text-emerald-500" /> Milestones Completed
                       </span>
-                      <strong className="font-mono">3 / 6</strong>
+                      <strong className="font-mono">{completedMilestonesCount} / {myMilestones.length || 0}</strong>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="flex items-center gap-1.5">
                         <Check className="w-4 h-4 text-emerald-500" /> Publications
                       </span>
-                      <strong className="font-mono">1 / 2</strong>
+                      <strong className="font-mono">{completedPublicationsCount} / {myPublications.length || 0}</strong>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="flex items-center gap-1.5">
                         <Check className="w-4 h-4 text-emerald-500" /> Thesis Chapters
                       </span>
-                      <strong className="font-mono">2 / 5</strong>
+                      <strong className="font-mono">{completedThesisCount} / {myThesisChapters.length || 0}</strong>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="flex items-center gap-1.5">
                         <Check className="w-4 h-4 text-emerald-500" /> Meetings Completed
                       </span>
-                      <strong className="font-mono">10 / 14</strong>
+                      <strong className="font-mono">{completedMeetingCount} / {myMeetingLogs.length || 0}</strong>
                     </div>
                   </div>
                 </div>
@@ -1306,7 +1307,7 @@ export default function StudentDashboard({
                     <label className="text-xs font-mono font-bold text-slate-450 block mb-2">Attach evidence document proof</label>
                     <div className="border border-dashed border-slate-300 rounded-2xl p-6 text-center hover:bg-slate-50/50 cursor-pointer transition-colors"
                       onClick={() => {
-                        const fileNames = ['Ahmed_Retinopathy_Manuscript_v2.pdf', 'retina_convergence_curves.xlsx', 'confusion_matrices.zip'];
+                        const fileNames = ['progress-evidence.pdf', 'thesis-draft.docx', 'results-summary.xlsx'];
                         const pick = fileNames[Math.floor(Math.random() * fileNames.length)];
                         setTempFileName(pick);
                       }}
@@ -1416,7 +1417,7 @@ export default function StudentDashboard({
                     <div className="flex justify-between items-center text-[10px] pt-2 border-t border-slate-200/40 font-mono">
                       <span className="text-slate-400">{new Date(file.createdAt).toLocaleDateString('en-MY', { month: 'short', year: 'numeric' })}</span>
                       <button 
-                        onClick={() => alert(`Beginning simulative secure download of manuscript "${file.fileName}"...`)}
+                        onClick={() => alert(`Download will be available after secure file storage is enabled for "${file.fileName}".`)}
                         className="text-indigo-600 font-bold hover:underline"
                       >
                         Download

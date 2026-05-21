@@ -13,26 +13,31 @@ interface StudentRegistrationProps {
 }
 
 export default function StudentRegistration({ onRegister, onCancel }: StudentRegistrationProps) {
+  const getDateAfterMonths = (months: number) => {
+    const date = new Date();
+    date.setMonth(date.getMonth() + months);
+    return date.toISOString().slice(0, 10);
+  };
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [studentType, setStudentType] = useState<StudentType>('FYP');
-  const [startDate, setStartDate] = useState('2025-09-01');
-  const [expectedEndDate, setExpectedEndDate] = useState('2026-06-15');
-  const [maxEndDate, setMaxEndDate] = useState('2026-09-01');
+  const [startDate, setStartDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [expectedEndDate, setExpectedEndDate] = useState(() => getDateAfterMonths(9));
+  const [maxEndDate, setMaxEndDate] = useState(() => getDateAfterMonths(12));
   const [researchTitle, setResearchTitle] = useState('');
 
   // Automatically update suggested expected/max dates based on selected student type
   const handleTypeChange = (type: StudentType) => {
     setStudentType(type);
     if (type === 'FYP') {
-      setExpectedEndDate('2026-06-15');
-      setMaxEndDate('2026-09-01');
+      setExpectedEndDate(getDateAfterMonths(9));
+      setMaxEndDate(getDateAfterMonths(12));
     } else if (type === 'Master') {
-      setExpectedEndDate('2027-08-31');
-      setMaxEndDate('2028-08-31');
+      setExpectedEndDate(getDateAfterMonths(24));
+      setMaxEndDate(getDateAfterMonths(36));
     } else {
-      setExpectedEndDate('2029-08-31');
-      setMaxEndDate('2031-08-31');
+      setExpectedEndDate(getDateAfterMonths(36));
+      setMaxEndDate(getDateAfterMonths(60));
     }
   };
 
@@ -88,7 +93,7 @@ export default function StudentRegistration({ onRegister, onCancel }: StudentReg
                 required
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="e.g. Liam Thompson"
+                placeholder="Student name"
                 className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-205 rounded-xl text-xs text-slate-800 outline-none focus:bg-white focus:ring-2 focus:ring-indigo-100 transition-all font-sans"
               />
             </div>
@@ -103,7 +108,7 @@ export default function StudentRegistration({ onRegister, onCancel }: StudentReg
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="e.g. l.thompson@university.edu"
+                placeholder="student@example.edu"
                 className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-205 rounded-xl text-xs text-slate-800 outline-none focus:bg-white focus:ring-2 focus:ring-indigo-100 transition-all font-sans"
               />
             </div>

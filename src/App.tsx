@@ -540,7 +540,7 @@ export default function App() {
       title,
       description: 'Assigned during supervision review.',
       priority,
-      deadline: '2025-05-27',
+      deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
       status: 'Pending',
       relatedArea
     };

@@ -11,7 +11,7 @@
   WeeklyUpdate
 } from '../types';
 
-const CURRENT_DATE = new Date('2025-05-20T12:00:00');
+const CURRENT_DATE = new Date();
 
 export function statusProgress(status: TaskStatus): number {
   switch (status) {
