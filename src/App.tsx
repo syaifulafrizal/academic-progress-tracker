@@ -37,6 +37,7 @@ import {
   insertReport,
   insertTask,
   insertWeeklyUpdate,
+  linkStudentAccountByEmail,
   loadSupabaseData,
   signInWithPassword,
   signUpWithPassword,
@@ -586,6 +587,13 @@ export default function App() {
     patchData(previous => ({ ...previous, reports: [report, ...previous.reports] }));
   };
 
+  const handleLinkStudentAccount = (studentId: string) => {
+    if (!isProductionData) return;
+    linkStudentAccountByEmail(studentId)
+      .then(() => refreshRemoteData())
+      .catch(error => alert(error.message));
+  };
+
   if (!currentUser) {
     return <LoginScreen users={data.users} onLogin={(user) => { setCurrentUser(user); setIsProductionData(false); }} onSupabaseLogin={handleSupabaseLogin} onSupabaseSignUp={handleSupabaseSignUp} />;
   }
@@ -663,6 +671,8 @@ export default function App() {
               onAddFeedbackToUpdate={handleAddFeedbackToUpdate}
               onAddMeetingLog={handleAddMeetingLog}
               onAddTaskForStudent={handleAddTaskForStudentProfile}
+              onLinkStudentAccount={handleLinkStudentAccount}
+              isProductionData={isProductionData}
               thesisChapters={data.thesisChapters}
             />
           ) : (

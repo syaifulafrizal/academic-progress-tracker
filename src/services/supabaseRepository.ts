@@ -347,6 +347,15 @@ export async function createStudentWithDefaults(lecturerId: string, input: Omit<
   return mapStudent(student);
 }
 
+export async function linkStudentAccountByEmail(studentId: string) {
+  const client = assertSupabase();
+  const { data, error } = await client.rpc('link_student_account_by_email', {
+    target_student_id: studentId
+  }).single<StudentRow>();
+  if (error) throw error;
+  return mapStudent(data);
+}
+
 export async function updateMilestone(milestoneId: string, status: StudentMilestone['status'], progressPercent: number) {
   const client = assertSupabase();
   const { error } = await client.from('student_milestones').update({ status, progress_percent: progressPercent }).eq('id', milestoneId);

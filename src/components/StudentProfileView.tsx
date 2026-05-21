@@ -30,6 +30,8 @@ interface StudentProfileViewProps {
   onAddFeedbackToUpdate: (updateId: string, text: string) => void;
   onAddMeetingLog: (log: Omit<MeetingLog, 'id' | 'studentId'>) => void;
   onAddTaskForStudent: (title: string, priority: 'High' | 'Medium' | 'Low', relatedArea: string) => void;
+  onLinkStudentAccount?: (studentId: string) => void;
+  isProductionData?: boolean;
 }
 
 export default function StudentProfileView({
@@ -46,6 +48,8 @@ export default function StudentProfileView({
   onAddFeedbackToUpdate,
   onAddMeetingLog,
   onAddTaskForStudent,
+  onLinkStudentAccount,
+  isProductionData = false,
   thesisChapters = []
 }: StudentProfileViewProps) {
   
@@ -147,6 +151,15 @@ export default function StudentProfileView({
         </div>
 
         <div className="flex items-center gap-2">
+          {isProductionData && (
+            <button
+              onClick={() => onLinkStudentAccount?.(student.id)}
+              disabled={Boolean(student.userId)}
+              className="text-xs font-bold px-3 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {student.userId ? 'Student Account Linked' : 'Link Student Account'}
+            </button>
+          )}
           <span className="text-xs font-mono font-medium text-slate-400">Attention Rating:</span>
           <span className="text-sm font-bold font-mono text-rose-500">{attentionScore} / 100</span>
         </div>
