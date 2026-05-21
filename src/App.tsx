@@ -29,6 +29,22 @@ import {
 } from './types';
 import { buildMilestoneTemplates, loadStoredData, resetStoredData, saveStoredData } from './services/demoStore';
 import { isSupabaseConfigured } from './services/supabaseClient';
+import {
+  createStudentWithDefaults,
+  getOrCreateProfile,
+  getSession,
+  insertMeetingLog,
+  insertReport,
+  insertTask,
+  insertWeeklyUpdate,
+  loadSupabaseData,
+  signInWithPassword,
+  signUpWithPassword,
+  signOut,
+  updateMilestone,
+  updateTaskStatus,
+  updateWeeklyFeedback
+} from './services/supabaseRepository';
 
 function makeId(prefix: string) {
   return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
@@ -36,16 +52,50 @@ function makeId(prefix: string) {
 
 function LoginScreen({
   users,
-  onLogin
+  onLogin,
+  onSupabaseLogin,
+  onSupabaseSignUp
 }: {
   users: AppUser[];
   onLogin: (user: AppUser) => void;
+  onSupabaseLogin: (email: string, password: string) => Promise<void>;
+  onSupabaseSignUp: (name: string, email: string, password: string, role: AppUser['role']) => Promise<void>;
 }) {
   const lecturer = users.find(user => user.role === 'Lecturer')!;
-  const student = users.find(user => user.role === 'Student')!;
+  const [name, setName] = useState('');
   const [email, setEmail] = useState(lecturer.email);
+  const [password, setPassword] = useState('');
+  const [authMode, setAuthMode] = useState<'supabase' | 'preview'>(isSupabaseConfigured ? 'supabase' : 'preview');
+  const [isCreatingAccount, setIsCreatingAccount] = useState(false);
+  const [signupRole, setSignupRole] = useState<AppUser['role']>('Lecturer');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
 
   const selectedUser = users.find(user => user.email === email) || lecturer;
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setError('');
+    setNotice('');
+    setIsSubmitting(true);
+    try {
+      if (authMode === 'supabase') {
+        if (isCreatingAccount) {
+          await onSupabaseSignUp(name, email, password, signupRole);
+          setNotice('Account created. If email confirmation is enabled in Supabase, confirm the email before signing in.');
+          setIsCreatingAccount(false);
+        } else {
+          await onSupabaseLogin(email, password);
+        }
+      } else {
+        onLogin(selectedUser);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to sign in.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#eef4fb] text-slate-900 flex">
@@ -103,39 +153,130 @@ function LoginScreen({
           <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 flex gap-3">
             <AlertTriangle className="h-5 w-5 shrink-0" />
             <p>
-              Preview mode is active. Add Supabase env vars to enable production Auth, Postgres, and Storage.
+              {isSupabaseConfigured ? 'Supabase is configured. Use a real account, or switch to preview mode for local sample data.' : 'Preview mode is active. Add Supabase env vars to enable production Auth, Postgres, and Storage.'}
             </p>
           </div>
 
-          <label className="block mt-6 text-xs font-bold uppercase text-slate-500">Choose account</label>
-          <select
-            value={email}
-            onChange={event => setEmail(event.target.value)}
-            className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold focus:outline-none focus:ring-4 focus:ring-blue-100"
-          >
-            <optgroup label="Lecturer">
-              {users.filter(user => user.role === 'Lecturer').map(user => (
-                <option key={user.id} value={user.email}>{user.name} - {user.email}</option>
-              ))}
-            </optgroup>
-            <optgroup label="Students">
-              {users.filter(user => user.role === 'Student').map(user => (
-                <option key={user.id} value={user.email}>{user.name} - {user.email}</option>
-              ))}
-            </optgroup>
-          </select>
+          <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+            <div className="grid grid-cols-2 bg-slate-50 border border-slate-200 rounded-2xl p-1">
+              <button
+                type="button"
+                onClick={() => setAuthMode('supabase')}
+                disabled={!isSupabaseConfigured}
+                className={`rounded-xl py-2 text-xs font-black ${authMode === 'supabase' ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-500'} disabled:opacity-40`}
+              >
+                Supabase Login
+              </button>
+              <button
+                type="button"
+                onClick={() => setAuthMode('preview')}
+                className={`rounded-xl py-2 text-xs font-black ${authMode === 'preview' ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-500'}`}
+              >
+                Preview Mode
+              </button>
+            </div>
 
-          <button
-            onClick={() => onLogin(selectedUser)}
-            className="mt-6 w-full rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-black py-3 transition-colors"
-          >
-            Continue as {selectedUser.role}
-          </button>
+            {authMode === 'preview' ? (
+              <>
+                <label className="block text-xs font-bold uppercase text-slate-500">Choose account</label>
+                <select
+                  value={email}
+                  onChange={event => setEmail(event.target.value)}
+                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold focus:outline-none focus:ring-4 focus:ring-blue-100"
+                >
+                  <optgroup label="Lecturer">
+                    {users.filter(user => user.role === 'Lecturer').map(user => (
+                      <option key={user.id} value={user.email}>{user.name} - {user.email}</option>
+                    ))}
+                  </optgroup>
+                  <optgroup label="Students">
+                    {users.filter(user => user.role === 'Student').map(user => (
+                      <option key={user.id} value={user.email}>{user.name} - {user.email}</option>
+                    ))}
+                  </optgroup>
+                </select>
+              </>
+            ) : (
+              <>
+                {isCreatingAccount && (
+                  <>
+                    <div>
+                      <label className="block text-xs font-bold uppercase text-slate-500">Full name</label>
+                      <input
+                        type="text"
+                        value={name}
+                        onChange={event => setName(event.target.value)}
+                        className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold focus:outline-none focus:ring-4 focus:ring-blue-100"
+                        placeholder="Supervisor or student name"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold uppercase text-slate-500">Account type</label>
+                      <select
+                        value={signupRole}
+                        onChange={event => setSignupRole(event.target.value as AppUser['role'])}
+                        className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold focus:outline-none focus:ring-4 focus:ring-blue-100"
+                      >
+                        <option value="Lecturer">Lecturer</option>
+                        <option value="Student">Student</option>
+                      </select>
+                    </div>
+                  </>
+                )}
+                <div>
+                  <label className="block text-xs font-bold uppercase text-slate-500">Email</label>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={event => setEmail(event.target.value)}
+                    className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold focus:outline-none focus:ring-4 focus:ring-blue-100"
+                    placeholder="you@example.edu"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold uppercase text-slate-500">Password</label>
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={event => setPassword(event.target.value)}
+                    className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold focus:outline-none focus:ring-4 focus:ring-blue-100"
+                    placeholder="Your Supabase password"
+                  />
+                </div>
+              </>
+            )}
+
+            {error && <p className="text-xs font-semibold text-rose-600 bg-rose-50 border border-rose-100 rounded-xl px-3 py-2">{error}</p>}
+            {notice && <p className="text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-xl px-3 py-2">{notice}</p>}
+
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-black py-3 transition-colors disabled:opacity-60"
+            >
+              {isSubmitting ? 'Working...' : authMode === 'preview' ? `Continue as ${selectedUser.role}` : isCreatingAccount ? 'Create account' : 'Sign in'}
+            </button>
+          </form>
+
+          {authMode === 'supabase' && (
+            <button
+              type="button"
+              onClick={() => {
+                setError('');
+                setNotice('');
+                setIsCreatingAccount(value => !value);
+              }}
+              className="mt-4 w-full text-xs font-black text-blue-700 hover:text-blue-900"
+            >
+              {isCreatingAccount ? 'Use existing Supabase account' : 'Create first lecturer or tester account'}
+            </button>
+          )}
 
           <div className="mt-6 text-xs text-slate-500 space-y-2">
             <p className="font-bold text-slate-700">Production status</p>
             <p>Supabase configured: <span className={isSupabaseConfigured ? 'text-emerald-600 font-bold' : 'text-amber-600 font-bold'}>{isSupabaseConfigured ? 'Yes' : 'No'}</span></p>
-            <p>Database schema: `supabase/migrations/001_initial_schema.sql`</p>
+            <p>Database schema: supabase/migrations/001_initial_schema.sql and 002_auth_profile_policies.sql</p>
           </div>
         </section>
       </main>
@@ -146,12 +287,60 @@ function LoginScreen({
 export default function App() {
   const [data, setData] = useState<AppData>(() => loadStoredData());
   const [currentUser, setCurrentUser] = useState<AppUser | null>(null);
+  const [isProductionData, setIsProductionData] = useState(false);
+  const [isLoadingData, setIsLoadingData] = useState(false);
   const [selectedStudentProfileId, setSelectedStudentProfileId] = useState<string | null>(null);
   const [showRegistrationForm, setShowRegistrationForm] = useState(false);
 
   useEffect(() => {
-    saveStoredData(data);
-  }, [data]);
+    if (!isProductionData) saveStoredData(data);
+  }, [data, isProductionData]);
+
+  useEffect(() => {
+    if (!isSupabaseConfigured) return;
+    getSession()
+      .then(async session => {
+        if (!session) return;
+        const user = await getOrCreateProfile(session);
+        const remoteData = await loadSupabaseData(user);
+        setCurrentUser(user);
+        setData(remoteData);
+        setIsProductionData(true);
+      })
+      .catch(error => console.warn('Supabase session restore failed:', error));
+  }, []);
+
+  const refreshRemoteData = async (user = currentUser) => {
+    if (!user || !isProductionData) return;
+    setIsLoadingData(true);
+    try {
+      setData(await loadSupabaseData(user));
+    } finally {
+      setIsLoadingData(false);
+    }
+  };
+
+  const handleSupabaseLogin = async (email: string, password: string) => {
+    const session = await signInWithPassword(email, password);
+    if (!session) throw new Error('Email confirmation may be required before signing in.');
+    const user = await getOrCreateProfile(session);
+    const remoteData = await loadSupabaseData(user);
+    setCurrentUser(user);
+    setData(remoteData);
+    setIsProductionData(true);
+  };
+
+  const handleSupabaseSignUp = async (name: string, email: string, password: string, role: AppUser['role']) => {
+    if (!name.trim()) throw new Error('Name is required.');
+    if (password.length < 6) throw new Error('Password must be at least 6 characters.');
+    const session = await signUpWithPassword(email, password, name.trim(), role);
+    if (!session) return;
+    const user = await getOrCreateProfile(session, name.trim(), role);
+    const remoteData = await loadSupabaseData(user);
+    setCurrentUser(user);
+    setData(remoteData);
+    setIsProductionData(true);
+  };
 
   const activeStudentProfile = useMemo(() => {
     if (!currentUser || currentUser.role !== 'Student') return null;
@@ -163,6 +352,10 @@ export default function App() {
   };
 
   const handleApproveTask = (taskId: string) => {
+    if (isProductionData) {
+      updateTaskStatus(taskId, 'Completed').then(() => refreshRemoteData()).catch(error => alert(error.message));
+      return;
+    }
     patchData(previous => ({
       ...previous,
       tasks: previous.tasks.map(task => task.id === taskId ? { ...task, status: 'Completed' } : task)
@@ -170,6 +363,10 @@ export default function App() {
   };
 
   const handleAddWeeklyUpdate = (newUpdate: Omit<WeeklyUpdate, 'id' | 'createdAt'>) => {
+    if (isProductionData) {
+      insertWeeklyUpdate(newUpdate).then(() => refreshRemoteData()).catch(error => alert(error.message));
+      return;
+    }
     const update: WeeklyUpdate = {
       ...newUpdate,
       id: makeId('w'),
@@ -199,6 +396,11 @@ export default function App() {
   };
 
   const handleToggleTaskState = (taskId: string) => {
+    const task = data.tasks.find(item => item.id === taskId);
+    if (isProductionData && task) {
+      updateTaskStatus(taskId, task.status === 'Completed' ? 'Pending' : 'Completed').then(() => refreshRemoteData()).catch(error => alert(error.message));
+      return;
+    }
     patchData(previous => ({
       ...previous,
       tasks: previous.tasks.map(task => {
@@ -224,6 +426,14 @@ export default function App() {
   };
 
   const handleUpdateMilestoneProgress = (milestoneId: string, progress: number) => {
+    if (isProductionData) {
+      let status: TaskStatus = 'In progress';
+      if (progress === 100) status = 'Approved';
+      else if (progress >= 80) status = 'Submitted';
+      else if (progress === 0) status = 'Not started';
+      updateMilestone(milestoneId, status, progress).then(() => refreshRemoteData()).catch(error => alert(error.message));
+      return;
+    }
     patchData(previous => ({
       ...previous,
       milestones: previous.milestones.map(milestone => {
@@ -238,6 +448,11 @@ export default function App() {
   };
 
   const handleApproveMilestone = (milestoneId: string, newStatus: TaskStatus) => {
+    if (isProductionData) {
+      const milestone = data.milestones.find(item => item.id === milestoneId);
+      updateMilestone(milestoneId, newStatus, newStatus === 'Approved' ? 100 : milestone?.progressPercent || 0).then(() => refreshRemoteData()).catch(error => alert(error.message));
+      return;
+    }
     patchData(previous => ({
       ...previous,
       milestones: previous.milestones.map(milestone => milestone.id === milestoneId
@@ -247,6 +462,10 @@ export default function App() {
   };
 
   const handleAddFeedbackToUpdate = (updateId: string, text: string) => {
+    if (isProductionData) {
+      updateWeeklyFeedback(updateId, text).then(() => refreshRemoteData()).catch(error => alert(error.message));
+      return;
+    }
     patchData(previous => ({
       ...previous,
       weeklyUpdates: previous.weeklyUpdates.map(update => update.id === updateId
@@ -257,6 +476,10 @@ export default function App() {
 
   const handleAddMeetingLog = (newLog: Omit<MeetingLog, 'id' | 'studentId'>) => {
     if (!selectedStudentProfileId) return;
+    if (isProductionData) {
+      insertMeetingLog(selectedStudentProfileId, newLog).then(() => refreshRemoteData()).catch(error => alert(error.message));
+      return;
+    }
     const log: MeetingLog = { ...newLog, id: makeId('ml'), studentId: selectedStudentProfileId };
     patchData(previous => ({ ...previous, meetingLogs: [log, ...previous.meetingLogs] }));
   };
@@ -275,10 +498,30 @@ export default function App() {
       status: 'Pending',
       relatedArea
     };
+    if (isProductionData) {
+      insertTask(selectedStudentProfileId, {
+        title: task.title,
+        description: task.description,
+        priority: task.priority,
+        deadline: task.deadline,
+        status: task.status,
+        relatedArea: task.relatedArea
+      }).then(() => refreshRemoteData()).catch(error => alert(error.message));
+      return;
+    }
     patchData(previous => ({ ...previous, tasks: [task, ...previous.tasks] }));
   };
 
   const handleRegisterStudent = (newStud: Omit<StudentProfile, 'id' | 'riskStatus' | 'attentionScore' | 'thesisStatus' | 'userId'>) => {
+    if (isProductionData && currentUser) {
+      createStudentWithDefaults(currentUser.id, newStud)
+        .then(() => {
+          setShowRegistrationForm(false);
+          return refreshRemoteData();
+        })
+        .catch(error => alert(error.message));
+      return;
+    }
     const studentId = makeId('st');
     const student: StudentProfile = {
       ...newStud,
@@ -308,6 +551,10 @@ export default function App() {
 
   const handleAddStudentTask = (newTask: Omit<AcademicTask, 'id' | 'studentId' | 'studentName'>) => {
     if (!activeStudentProfile) return;
+    if (isProductionData) {
+      insertTask(activeStudentProfile.id, newTask).then(() => refreshRemoteData()).catch(error => alert(error.message));
+      return;
+    }
     const task: AcademicTask = {
       ...newTask,
       id: makeId('t'),
@@ -326,11 +573,21 @@ export default function App() {
       createdAt: new Date().toISOString().slice(0, 10),
       downloadUrl: '#'
     };
+    if (isProductionData && currentUser) {
+      insertReport(currentUser.id, {
+        title: report.title,
+        type: report.type,
+        generatedBy: report.generatedBy,
+        createdAt: report.createdAt,
+        downloadUrl: report.downloadUrl
+      }).then(() => refreshRemoteData()).catch(error => alert(error.message));
+      return;
+    }
     patchData(previous => ({ ...previous, reports: [report, ...previous.reports] }));
   };
 
   if (!currentUser) {
-    return <LoginScreen users={data.users} onLogin={setCurrentUser} />;
+    return <LoginScreen users={data.users} onLogin={(user) => { setCurrentUser(user); setIsProductionData(false); }} onSupabaseLogin={handleSupabaseLogin} onSupabaseSignUp={handleSupabaseSignUp} />;
   }
 
   return (
@@ -353,21 +610,28 @@ export default function App() {
               {currentUser.name} ({currentUser.role})
             </span>
             <span className={`rounded-xl px-3 py-2 text-xs font-bold border ${isSupabaseConfigured ? 'bg-emerald-950 text-emerald-200 border-emerald-800' : 'bg-amber-950 text-amber-200 border-amber-800'}`}>
-              {isSupabaseConfigured ? 'Supabase connected' : 'Local preview mode'}
+              {isProductionData ? 'Supabase data' : 'Local preview mode'}
             </span>
+            {isLoadingData && <span className="text-xs font-bold text-blue-200">Syncing...</span>}
             <button
               onClick={() => {
-                resetStoredData();
-                setData(loadStoredData());
+                if (isProductionData) {
+                  refreshRemoteData();
+                } else {
+                  resetStoredData();
+                  setData(loadStoredData());
+                }
               }}
               className="px-3 py-2 rounded-xl text-xs font-bold bg-slate-900 hover:bg-slate-800 border border-slate-800 flex items-center gap-2"
             >
               <RotateCcw className="w-4 h-4" />
-              Reset Preview
+              {isProductionData ? 'Refresh Data' : 'Reset Preview'}
             </button>
             <button
               onClick={() => {
+                if (isProductionData) signOut().catch(() => undefined);
                 setCurrentUser(null);
+                setIsProductionData(false);
                 setSelectedStudentProfileId(null);
                 setShowRegistrationForm(false);
               }}
