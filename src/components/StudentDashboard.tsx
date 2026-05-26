@@ -76,6 +76,7 @@ export default function StudentDashboard({
   const [tempFileName, setTempFileName] = useState('');
   const [manualFileName, setManualFileName] = useState('');
   const [selectedMilestoneForUpload, setSelectedMilestoneForUpload] = useState('');
+  const [showNotifications, setShowNotifications] = useState(false);
 
   // Submit academic task form states
   const [newTaskTitle, setNewTaskTitle] = useState('');
@@ -315,6 +316,33 @@ export default function StudentDashboard({
   const completedPublicationsCount = myPublications.filter(pub => pub.status === 'Accepted' || pub.status === 'Published').length;
   const completedThesisCount = myThesisChapters.filter(chapter => chapter.status === 'Approved' || chapter.progressPercent >= 100).length;
   const completedMeetingCount = myMeetingLogs.filter(log => log.meetingDate <= formatLocalDate(today)).length;
+  const studentNotifications = useMemo(() => {
+    const pendingTasks = myTasks
+      .filter(task => task.status !== 'Completed')
+      .slice(0, 3)
+      .map(task => ({
+        id: `task-${task.id}`,
+        title: 'Pending task',
+        detail: `${task.title} due ${task.deadline}`,
+        action: () => setActiveSidebarTab('WeeklyTasks')
+      }));
+    const upcomingMeeting = nextMeetingEvent ? [{
+      id: `meeting-${nextMeetingEvent.id}`,
+      title: 'Upcoming meeting',
+      detail: `${nextMeetingEvent.title} on ${nextMeetingEvent.date} at ${nextMeetingEvent.time}`,
+      action: () => setActiveSidebarTab('Meetings')
+    }] : [];
+    const feedback = myUpdates
+      .filter(update => update.feedbackText)
+      .slice(0, 2)
+      .map(update => ({
+        id: `feedback-${update.id}`,
+        title: 'Supervisor feedback received',
+        detail: update.relatedMilestoneTitle,
+        action: () => setActiveSidebarTab('Feedback')
+      }));
+    return [...upcomingMeeting, ...feedback, ...pendingTasks].slice(0, 6);
+  }, [myTasks, myUpdates, nextMeetingEvent]);
 
   return (
     <div className="flex bg-[#f4f7fc] min-h-screen relative" id="student-workspace-container">
@@ -421,11 +449,45 @@ export default function StudentDashboard({
             </div>
 
             {/* Alerts Bell notification badge */}
-            <div className="relative p-2 hover:bg-slate-50 rounded-xl cursor-pointer">
-              <Bell className="w-4 h-4 text-slate-600" />
-              <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 text-white text-[8px] font-mono font-bold rounded-full flex items-center justify-center">
-                3
-              </span>
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setShowNotifications(value => !value)}
+                className="relative p-2 hover:bg-slate-50 rounded-xl cursor-pointer"
+                aria-label="Open notifications"
+              >
+                <Bell className="w-4 h-4 text-slate-600" />
+                {studentNotifications.length > 0 && (
+                  <span className="absolute top-1 right-1 min-w-4 h-4 px-1 bg-red-500 text-white text-[8px] font-mono font-bold rounded-full flex items-center justify-center">
+                    {studentNotifications.length}
+                  </span>
+                )}
+              </button>
+              {showNotifications && (
+                <div className="absolute right-0 top-11 z-50 w-80 rounded-2xl border border-slate-200 bg-white shadow-xl p-3">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                    <h4 className="text-xs font-black text-slate-900">Notifications</h4>
+                    <button onClick={() => setShowNotifications(false)} className="text-[10px] font-bold text-slate-400 hover:text-slate-600">Close</button>
+                  </div>
+                  <div className="mt-2 space-y-2 max-h-80 overflow-y-auto">
+                    {studentNotifications.length === 0 ? (
+                      <p className="text-xs text-slate-500 p-3 bg-slate-50 rounded-xl">No active notifications.</p>
+                    ) : studentNotifications.map(item => (
+                      <button
+                        key={item.id}
+                        onClick={() => {
+                          item.action();
+                          setShowNotifications(false);
+                        }}
+                        className="w-full text-left p-3 rounded-xl bg-slate-50 hover:bg-indigo-50 border border-slate-100 transition-colors"
+                      >
+                        <strong className="block text-xs text-slate-900">{item.title}</strong>
+                        <span className="block text-[11px] text-slate-500 mt-1">{item.detail}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Profile badge snippet */}

@@ -78,6 +78,7 @@ export default function LecturerDashboard({
   const [meetingSummary, setMeetingSummary] = useState('Progress review meeting');
   const [meetingFeedback, setMeetingFeedback] = useState('Scheduled supervision discussion.');
   const [meetingActions, setMeetingActions] = useState('Prepare progress update before the meeting.');
+  const [showNotifications, setShowNotifications] = useState(false);
 
   // State for Review Updates Draft feedback modal / inline
   const [reviewingUpdateId, setReviewingUpdateId] = useState<string | null>(null);
@@ -251,6 +252,39 @@ export default function LecturerDashboard({
   const tasksDueThisWeek = tasks.filter(t => t.status === 'Pending').length;
   const totalOverdueTasks = tasks.filter(t => t.status === 'Overdue').length + milestones.filter(m => m.status === 'Overdue').length;
   const nearGraduationCount = enrichedStudents.filter(s => s.computedProgress >= 75).length;
+  const lecturerNotifications = useMemo(() => {
+    const highRisk = enrichedStudents
+      .filter(student => student.computedRisk === 'Critical' || student.computedRisk === 'Delayed')
+      .slice(0, 3)
+      .map(student => ({
+        id: `risk-${student.id}`,
+        title: `${student.name} needs attention`,
+        detail: `${student.computedRisk} risk, ${student.computedProgress}% progress`,
+        action: () => onOpenStudentProfile(student.id)
+      }));
+    const feedbackRequests = weeklyUpdates
+      .filter(update => update.needFeedback)
+      .slice(0, 3)
+      .map(update => {
+        const student = students.find(item => item.id === update.studentId);
+        return {
+          id: `feedback-${update.id}`,
+          title: 'Feedback requested',
+          detail: `${student?.name || 'Student'} submitted ${update.relatedMilestoneTitle}`,
+          action: () => student && onOpenStudentProfile(student.id)
+        };
+      });
+    const overdue = tasks
+      .filter(task => task.status === 'Overdue')
+      .slice(0, 3)
+      .map(task => ({
+        id: `task-${task.id}`,
+        title: 'Overdue task',
+        detail: `${task.studentName || 'Student'}: ${task.title}`,
+        action: () => onOpenStudentProfile(task.studentId)
+      }));
+    return [...highRisk, ...feedbackRequests, ...overdue].slice(0, 6);
+  }, [enrichedStudents, onOpenStudentProfile, students, tasks, weeklyUpdates]);
 
   // Reminders mock
   const [remindedStudents, setRemindedStudents] = useState<string[]>([]);
@@ -368,9 +402,45 @@ export default function LecturerDashboard({
             </button>
 
             {/* Notification */}
-            <div className="relative p-2 hover:bg-slate-50 rounded-xl cursor-pointer">
-              <Bell className="w-4 h-4 text-slate-600" />
-              <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-rose-500 rounded-full" />
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setShowNotifications(value => !value)}
+                className="relative p-2 hover:bg-slate-50 rounded-xl cursor-pointer"
+                aria-label="Open notifications"
+              >
+                <Bell className="w-4 h-4 text-slate-600" />
+                {lecturerNotifications.length > 0 && (
+                  <span className="absolute top-1 right-1 min-w-4 h-4 px-1 bg-rose-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
+                    {lecturerNotifications.length}
+                  </span>
+                )}
+              </button>
+              {showNotifications && (
+                <div className="absolute right-0 top-11 z-50 w-80 rounded-2xl border border-slate-200 bg-white shadow-xl p-3">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                    <h4 className="text-xs font-black text-slate-900">Notifications</h4>
+                    <button onClick={() => setShowNotifications(false)} className="text-[10px] font-bold text-slate-400 hover:text-slate-600">Close</button>
+                  </div>
+                  <div className="mt-2 space-y-2 max-h-80 overflow-y-auto">
+                    {lecturerNotifications.length === 0 ? (
+                      <p className="text-xs text-slate-500 p-3 bg-slate-50 rounded-xl">No active notifications.</p>
+                    ) : lecturerNotifications.map(item => (
+                      <button
+                        key={item.id}
+                        onClick={() => {
+                          item.action();
+                          setShowNotifications(false);
+                        }}
+                        className="w-full text-left p-3 rounded-xl bg-slate-50 hover:bg-indigo-50 border border-slate-100 transition-colors"
+                      >
+                        <strong className="block text-xs text-slate-900">{item.title}</strong>
+                        <span className="block text-[11px] text-slate-500 mt-1">{item.detail}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </header>

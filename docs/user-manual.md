@@ -210,4 +210,3 @@ When reporting an issue, include:
 - Student name or profile affected, if relevant.
 - Error message shown.
 - Time and browser used.
-
