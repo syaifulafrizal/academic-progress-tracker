@@ -1,212 +1,456 @@
 # Academic Tracker User Manual
 
-Version: 1.0  
-Audience: Lecturers, supervisors, students, and project testers
+Version: 1.1  
+For: Lecturers, students, testers, and administrators
 
-## 1. Overview
+## 1. What Academic Tracker Is
 
-Academic Tracker is a web application for tracking academic research progress. It supports lecturer and student accounts, supervised student profiles, milestones, weekly updates, progress meetings, task lists, thesis progress, publication tracking, evidence records, calendar visibility, and progress reports.
+Academic Tracker is a web application for monitoring academic progress.
 
-The application is designed around two main roles:
+It is designed for:
 
-- Lecturer: manages supervised students and reviews progress.
-- Student: submits updates, views assigned milestones, tracks tasks, and checks meeting schedules.
+- Lecturers or supervisors who manage and review student progress
+- Students who submit updates, track milestones, and follow meeting schedules
 
-## 2. Getting Started
+The system helps track:
 
-Open the application URL provided by the administrator. Use the sign-in screen to access your account.
+- student profiles
+- milestones
+- weekly updates
+- meetings
+- tasks
+- thesis or report progress
+- publications
+- progress reports
+- calendar availability
 
-For a live deployment, use your registered email and password. If the deployment allows preview mode, preview accounts are only for testing and should not be used for real progress records.
+## 2. Before You Start
 
-## 3. Account Registration
+You need:
 
-### Lecturer Account
+- the application link
+- your registered email address
+- your password
+
+If you do not have an account yet, follow the steps in the account section below.
+
+## 3. Roles In The System
+
+There are two main user roles:
+
+### Lecturer
+
+Lecturers can:
+
+- register students
+- view all students under their supervision
+- review milestones
+- give feedback
+- schedule meetings
+- assign tasks
+- generate reports
+
+### Student
+
+Students can:
+
+- view their own profile
+- update milestone progress
+- submit weekly updates
+- check assigned tasks
+- view meeting logs
+- view supervisor busy slots in the calendar
+
+## 4. Signing In
+
+1. Open the application link.
+2. Enter your email.
+3. Enter your password.
+4. Click `Sign In`.
+
+If email confirmation is enabled for the deployment, confirm your email first before signing in.
+
+## 5. Creating Accounts
+
+Account creation is different for lecturers and students.
+
+### 5.1 Lecturer Account Creation
+
+Use these steps if you are the lecturer or first supervisor using the system.
 
 1. Open the sign-in page.
-2. Select the account creation option.
-3. Enter your name, email, password, and choose Lecturer.
-4. If email confirmation is enabled, confirm your email before signing in.
-5. Sign in with the registered account.
+2. Click `Create account`.
+3. Enter your full name.
+4. Enter your email.
+5. Enter your password.
+6. Choose `Lecturer`.
+7. Submit the form.
+8. Confirm your email if required.
+9. Sign in.
 
-### Student Account
+### 5.2 Student Account Creation
 
-1. The lecturer registers a supervised student profile using the student's email.
-2. The student creates an account with the same email.
-3. The lecturer opens the student profile and selects Link Student Account.
-4. The student signs in and should see their own dashboard.
+Students should not create an account before the lecturer has registered their profile.
 
-If the student sees "No student profile linked", the lecturer should verify that the student profile email and account email match, then link the account again.
+Correct sequence:
 
-## 4. Lecturer Workflow
+1. Lecturer registers the student profile first.
+2. Student creates an account using the same email address.
+3. Lecturer links the student account to the registered profile.
+4. Student signs in and uses the dashboard.
 
-### Dashboard
+### Important Rule For Students
 
-The lecturer dashboard gives a high-level overview of supervised students:
+The student's account email must match the email used by the lecturer during student registration.
 
-- Total supervised students by FYP, Master, and PhD category.
-- Critical and delayed students.
-- Pending tasks.
-- Overdue deliverables.
-- Near-graduation students.
-- Monthly calendar.
-- Supervision prioritizer.
+If the emails do not match, the student account cannot be linked properly.
 
-Open an individual student profile to view detailed progress, thesis, milestone, update, and meeting information.
+## 6. How A Lecturer Registers A Student
 
-### Register A Student
+1. Sign in as lecturer.
+2. On the dashboard, click `Register Student`.
+3. Fill in:
+   - student name
+   - student email
+   - academic category: FYP, Master, or PhD
+   - start date
+   - expected completion date
+   - maximum completion date
+   - thesis or research title
+4. Submit the form.
 
-1. Click Register Student.
-2. Enter the student's name and email.
-3. Select the academic track: FYP, Master, or PhD.
-4. Set start, expected completion, and maximum completion dates.
-5. Enter the research or thesis title.
-6. Confirm registration.
+After submission:
 
-The system automatically initializes milestone and thesis chapter records for the student.
+- the student profile is created
+- milestone templates are initialized
+- thesis chapter records are prepared
 
-### Link A Student Account
+## 7. How A Student Creates Their Account
 
-1. Open the registered student profile.
-2. Confirm that the student has already created an account using the same email.
-3. Click Link Student Account.
-4. The button changes to Student Account Linked when successful.
+After the lecturer has registered the student profile:
 
-### Review Student Profile
+1. Open the sign-in page.
+2. Click `Create account`.
+3. Enter your full name.
+4. Enter the exact same email used by the lecturer.
+5. Enter your password.
+6. Choose `Student`.
+7. Submit the form.
+8. Confirm the email if required.
 
-Inside a student profile, the lecturer can:
+At this stage, the student account exists, but it may still need to be linked by the lecturer.
 
-- Check overall progress and risk.
-- Review assigned milestones.
-- Approve or request revision for milestones.
-- Read weekly updates.
-- Provide feedback.
-- Add meeting logs.
-- Assign quick progress action items.
-- Review thesis chapter progress.
+## 8. How The Lecturer Links A Student Account
 
-### Schedule Meetings
+After the student creates an account:
 
-1. Open Meeting Logs.
-2. Select a student.
-3. Choose meeting date and time.
-4. Enter agenda, notes, and action item.
-5. Click Schedule.
+1. Sign in as lecturer.
+2. Open the student's profile.
+3. Confirm the student email in the system matches the student account email.
+4. Click `Link Student Account`.
 
-The meeting appears in the lecturer calendar and the student's calendar. Other students only see the slot as Supervisor busy.
+When successful:
 
-## 5. Student Workflow
+- the button changes to `Student Account Linked`
+- the student can sign in and access the correct dashboard
 
-### Dashboard
+## 9. What To Do If A Student Sees "No Student Profile Linked"
 
-The student dashboard shows:
+This means the student account exists, but it is not connected to the registered student profile.
 
-- Overall progress.
-- Study time used.
-- Current risk status.
-- Next deadline.
-- Upcoming meeting.
-- Assigned milestones.
-- Task checklist.
-- Recent meeting summary.
-- Supervisor feedback.
-- Thesis progress.
-- Calendar.
+Check the following:
 
-### Submit Weekly Update
+1. Was the student registered by the lecturer first?
+2. Did the student use the same email address?
+3. Did the lecturer click `Link Student Account`?
 
-1. Open Weekly Updates.
-2. Enter work completed this week.
-3. Enter incomplete work, blockers, and next plan where relevant.
-4. Select the related milestone.
-5. Add an evidence file name if required.
-6. Choose whether supervisor feedback is needed.
-7. Submit the update.
+If not, repeat the account linking process.
 
-### Update Milestone Progress
+## 10. Lecturer Dashboard Guide
 
-1. Open My Milestones.
-2. Adjust the progress slider for the relevant milestone.
-3. The milestone status updates based on progress.
-4. Submitted or approved status is reviewed by the lecturer.
+The lecturer dashboard is the control center for supervision.
 
-### Manage Tasks
+It shows:
 
-1. Open Weekly Tasks.
-2. Review assigned actions.
-3. Mark tasks complete when done.
-4. Add personal progress tasks when needed.
+- total supervised students
+- counts by FYP, Master, and PhD
+- high-risk students
+- overdue items
+- task workload
+- near-graduation students
+- monthly calendar
+- priority rankings
 
-### View Meetings
+### Main Lecturer Tabs
 
-Open Meeting Summary to view meeting notes, supervisor feedback, action items, and the next meeting date.
+#### Dashboard
 
-### Use The Calendar
+Use this for the overall summary.
+
+#### Students List
+
+Use this to find and open an individual student profile.
+
+#### Deadlines Calendar
+
+Use this to review meetings, milestones, and deadlines by month.
+
+#### Weekly Updates
+
+Use this to review submitted progress updates and requests for feedback.
+
+#### Meeting Logs
+
+Use this to:
+
+- review past meetings
+- schedule new meetings
+- monitor follow-up items
+
+#### Milestones Map
+
+Use this to review milestone progress across students.
+
+#### Publications Tracker
+
+Use this to review publication progress.
+
+#### Thesis Chapters
+
+Use this to monitor chapter-level thesis progress.
+
+#### Reports
+
+Use this to generate progress-related reports.
+
+## 11. Lecturer Student Profile Guide
+
+When a lecturer opens a student profile, they can:
+
+- view overall progress
+- review time used
+- check risk status
+- read weekly updates
+- review task progress
+- review thesis chapter progress
+- add meeting logs
+- assign action items
+- approve milestones
+- request revisions
+
+## 12. How A Lecturer Schedules A Meeting
+
+1. Open `Meeting Logs`.
+2. Select the student.
+3. Choose the meeting date.
+4. Choose the meeting time.
+5. Enter the agenda.
+6. Enter notes or feedback.
+7. Enter at least one action item.
+8. Click `Schedule`.
+
+After scheduling:
+
+- the meeting appears in the lecturer calendar
+- the meeting appears in the student's calendar
+- other students only see the lecturer as busy, not the student name
+
+## 13. Student Dashboard Guide
+
+The student dashboard is the student's personal workspace.
+
+It shows:
+
+- overall progress
+- time used
+- current risk
+- next deadline
+- next meeting
+- milestones
+- tasks
+- thesis progress
+- supervisor feedback
+- calendar
+
+## 14. How A Student Uses The Dashboard
+
+### 14.1 Update Milestones
+
+1. Open `My Milestones`.
+2. Find the relevant milestone.
+3. Adjust the progress value.
+4. Save the updated progress.
+
+Note:
+
+- milestone progress may affect the student's risk and overall progress
+- some milestone statuses still need lecturer approval
+
+### 14.2 Submit Weekly Updates
+
+1. Open `Weekly Updates`.
+2. Enter:
+   - what was completed
+   - what was not completed
+   - blockers
+   - next week's plan
+3. Select the related milestone if needed.
+4. Add the evidence file name if required.
+5. Choose whether urgent feedback is needed.
+6. Submit the update.
+
+### 14.3 Manage Tasks
+
+1. Open `Weekly Tasks`.
+2. Review the tasks assigned by the lecturer.
+3. Mark tasks completed when finished.
+4. Add personal tasks if needed.
+
+### 14.4 Read Meeting Logs
+
+1. Open `Meeting Summary`.
+2. Read:
+   - meeting date
+   - supervisor feedback
+   - action items
+   - next meeting date
+
+### 14.5 Use The Calendar
 
 The student calendar shows:
 
-- Own meetings.
-- Own tasks.
-- Milestone deadlines.
-- Weekly update deadlines.
-- Supervisor busy slots.
+- personal meetings
+- personal tasks
+- milestone deadlines
+- weekly update deadlines
+- lecturer busy slots
 
-Supervisor busy slots do not show other student names.
+The calendar does not show other students' private details.
 
-## 6. Reports
+## 15. Notification Bell
+
+The bell icon now opens notifications.
+
+### Lecturer Notifications Can Show
+
+- students needing attention
+- feedback requests
+- overdue tasks
+
+### Student Notifications Can Show
+
+- pending tasks
+- upcoming meetings
+- supervisor feedback
+
+Clicking a notification opens the related area of the system.
+
+## 16. Reports
 
 Lecturers can generate reports for:
 
-- Student progress.
-- Milestones.
-- Meetings.
-- Publications.
-- Weekly updates.
+- student progress
+- milestones
+- meetings
+- publications
+- weekly updates
 
-Generated reports appear in the Reports tab.
+Generated reports appear in the `Reports` tab.
 
-## 7. Data Privacy Notes
+## 17. Privacy And Visibility
 
-- Students can only access their own profile and related records.
-- Lecturers can access students they supervise.
-- Other student meeting slots are hidden from student calendars and shown only as supervisor busy slots.
-- Account authentication is handled through the live account system configured for the deployment.
+The system is designed so users only see what they should see.
 
-## 8. Common Issues
+### Students Can See
 
-### Invalid API Key
+- their own profile
+- their own meetings
+- their own tasks
+- their own updates
+- their own milestones
+- lecturer busy slots without other student names
 
-The live deployment environment variables are misconfigured. Ask the administrator to check the live database URL and publishable key, then redeploy.
+### Lecturers Can See
 
-### No Student Profile Linked
+- students they supervise
+- student progress details
+- student meetings
+- student tasks
+- student updates
 
-The student's account has not been linked to the registered student profile. The lecturer should open the student profile and link the account.
+## 18. Common Problems And Fixes
 
-### Email Confirmation Opens The Wrong URL
+### Problem: Invalid API Key
 
-The authentication redirect URL is misconfigured. The administrator should update the authentication Site URL and Redirect URLs to the deployed application URL.
+Meaning:
 
-### Too Many Signup Emails
+The live deployment is connected to the wrong environment variables.
 
-The authentication email provider is rate limited. Wait before trying again, or configure a custom SMTP provider for production.
+Action:
 
-## 9. Administrator Deployment Checklist
+Ask the administrator to check:
 
-Before sharing the application publicly:
+- live database URL
+- publishable key
+- deployment environment variables
 
-1. Confirm Supabase migrations have been run.
-2. Confirm Vercel environment variables are set.
-3. Confirm authentication redirect URLs point to the deployed application.
-4. Disable preview mode in public deployment.
+### Problem: No Student Profile Linked
+
+Meaning:
+
+The student account was created, but not linked to the registered student profile.
+
+Action:
+
+The lecturer should open the student profile and click `Link Student Account`.
+
+### Problem: Email Confirmation Opens The Wrong Website
+
+Meaning:
+
+The authentication redirect URL is incorrect.
+
+Action:
+
+The administrator must update the authentication Site URL and Redirect URLs.
+
+### Problem: Signup Email Limit Reached
+
+Meaning:
+
+The email provider is rate limited.
+
+Action:
+
+- wait and try again later
+- or use a proper SMTP configuration for production
+
+## 19. Administrator Checklist
+
+Before real users start testing:
+
+1. Confirm database migrations have been run.
+2. Confirm live environment variables are correct.
+3. Confirm redirect URLs match the deployed application.
+4. Confirm preview mode is disabled on public deployment if required.
 5. Create a lecturer account.
-6. Register and link a test student.
-7. Test lecturer login, student login, meeting scheduling, and calendar visibility.
+6. Register at least one student.
+7. Create the student account.
+8. Link the student account.
+9. Test lecturer login.
+10. Test student login.
+11. Test meeting scheduling.
+12. Test calendar visibility.
 
-## 10. Support Procedure
+## 20. When Reporting A Bug
 
-When reporting an issue, include:
+Please include:
 
-- Account role: Lecturer or Student.
-- Page or tab where the problem happened.
-- Student name or profile affected, if relevant.
-- Error message shown.
-- Time and browser used.
+- whether you are a Lecturer or Student
+- which page or tab has the problem
+- the student name involved, if relevant
+- the exact error message
+- what action you were trying to perform
+- the time the issue happened
+- browser or device used
+
